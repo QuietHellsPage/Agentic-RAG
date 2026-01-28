@@ -1,8 +1,16 @@
+"""
+Testing file
+"""
 
-def f(a: str, b: str) -> None:
+
+def f(a: int, b: int) -> int:
+    """
+    Calculate pow
+    """
     return pow(a, b)
+
 
 print(f(2, 7))
 
 
-const = "HELLO WORLD"
+CONST = "HELLO WORLD"
