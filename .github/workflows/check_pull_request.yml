@@ -8,7 +8,6 @@ on:
 jobs:
   Checks:
     runs-on: ubuntu-latest
-    continue-on-error: true
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python
@@ -22,21 +21,26 @@ jobs:
         pip install -r requirements.txt
 
     - name: Pylint check
+      continue-on-error: true
       run: |
         pylint $(git ls-files '*.py')
 
     - name: Mypy check
+      continue-on-error: true
       run: |
         mypy $(git ls-files '*.py')
 
     - name: Isort check
+      continue-on-error: true
       run: |
         isort --check-only $(git ls-files '*.py')
 
     - name: Black check
+      continue-on-error: true
       run: |
         black --check $(git ls-files '*.py')
 
     - name: Unittests check
+      continue-on-error: true
       run: |
         echo "unittests stub"
