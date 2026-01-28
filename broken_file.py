@@ -1,8 +1,15 @@
-def g(a: str, b: str) -> None:
+"""
+Test
+"""
+
+
+def g(a: int, b: int) -> int:
+    """
+    Test
+    """
     return pow(a, b)
+
 
 print(g(3, 7))
 
-const = "HELLO WORLD"
-import functools
-import itertools
+CONST = "HELLO WORLD"
