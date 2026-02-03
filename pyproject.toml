@@ -1,0 +1,6 @@
+[tool.mypy]
+python_version = "3.13"
+
+[[tool.mypy.overrides]]
+module = ["faiss.*"]
+follow_untyped_imports = true
