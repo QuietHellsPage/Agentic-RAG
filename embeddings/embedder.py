@@ -35,7 +35,7 @@ class Embedder:
         self._parent_chunk_overlap = config.parent_chunk_overlap
         self._child_chunk_overlap = config.child_chunk_overlap
         self._model = HuggingFaceEmbeddings(
-            model_name="Qwen/Qwen3-Embedding-0.6B",  # TODO: larger model
+            model_name="Qwen/Qwen3-Embedding-0.6B",  # TODO: larger model # pylint: disable=fixme
             model_kwargs={"device": self._device},
         )
         self._storage = self._init_storage()
@@ -110,7 +110,7 @@ class Embedder:
 
     def _init_storage(
         self,
-        # TODO: 1024 is for 0.6B model, change according to the model we use later
+        # TODO: 1024 is for 0.6B model, change according to the model we use later # pylint: disable=fixme
         model_dimension: int = 1024,
     ):
         """
