@@ -139,15 +139,15 @@ class Embedder:
 
 ## usage example for later:
 if __name__ == "__main__":
-    config = EmbedderConfig(
+    embedder_config = EmbedderConfig(
         parent_chunk_size=5,
         parent_chunk_overlap=3,
         child_chunk_size=3,
         child_chunk_overlap=1,
     )
-    embedder = Embedder(config)
+    embedder = Embedder(embedder_config)
     embedder.add_documents(
-        ["# this is a sample text." "### subsection.", "the. quick? brown! fox jumps"]
+        ["# this is a sample text.", "### subsection.", "the. quick? brown! fox jumps"]
     )
 
     print(embedder.similarity_search("fox"))
