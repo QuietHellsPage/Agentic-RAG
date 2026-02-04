@@ -31,3 +31,4 @@ class EmbedderConfig(BaseModel):
             raise ValueError(
                 "Parent chunk overlap can not be bigger or the same as parent chunks"
             )
+        return self
