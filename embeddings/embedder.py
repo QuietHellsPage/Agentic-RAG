@@ -12,7 +12,8 @@ from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from models import EmbedderConfig
+
+from embeddings.models import EmbedderConfig
 
 
 class Embedder:
@@ -95,24 +96,32 @@ class Embedder:
             for parent_id, parent_chunk in enumerate(document_chunks):
                 children_chunks = child_splitter.split_text(parent_chunk)
 
-                chunk_storage.append({
-                    "document_id": document_id,
-                    "parent_id": parent_id,
-                    "parent_text": parent_chunk
-                })
-
-                for child_id, child_chunk in enumerate(children_chunks):
-                    metadata = {
+                chunk_storage.append(
+                    {
                         "document_id": document_id,
                         "parent_id": parent_id,
-                        "chunk_id": child_id,
+                        "parent_text": parent_chunk,
                     }
-                    child_doc = Document(child_chunk, metadata=metadata)
-                    docs.append(child_doc)
+                )
+
+                for child_id, child_chunk in enumerate(children_chunks):
+                    docs.append(
+                        Document(
+                            child_chunk,
+                            metadata={
+                                "document_id": document_id,
+                                "parent_id": parent_id,
+                                "chunk_id": child_id,
+                            },
+                        )
+                    )
 
         self._storage.add_documents(docs)
-        path = Path(__file__).parent.parent / "storage" / "parent_chunk_storage.json"
-        with open(path, 'w', encoding="utf-8") as file:
+        with open(
+            Path(__file__).parent.parent / "storage" / "parent_chunk_storage.json",
+            "w",
+            encoding="utf-8",
+        ) as file:
             json.dump(chunk_storage, file, indent=4)
 
     def embed(self, chunk: str):
