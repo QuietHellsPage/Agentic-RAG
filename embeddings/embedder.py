@@ -2,16 +2,16 @@
 Module to operate processing of raw text and saving it to vector db
 """
 
-import faiss
 import json
+from pathlib import Path
+
+import faiss
 import torch
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from pathlib import Path
-
 from models import EmbedderConfig
 
 
@@ -112,7 +112,7 @@ class Embedder:
 
         self._storage.add_documents(docs)
         path = Path(__file__).parent.parent / "storage" / "parent_chunk_storage.json"
-        with open(path, 'w') as file:
+        with open(path, 'w', encoding="utf-8") as file:
             json.dump(chunk_storage, file, indent=4)
 
     def embed(self, chunk: str):
