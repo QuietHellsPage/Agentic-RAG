@@ -3,14 +3,16 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import faiss
+import json
 import torch
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from pathlib import Path
 
-from embeddings.models import EmbedderConfig
+from models import EmbedderConfig
 
 
 class Embedder:
@@ -87,10 +89,18 @@ class Embedder:
 
         documents_chunks = [parent_splitter.split_text(text) for text in texts]
         docs = []
+        chunk_storage = []
 
         for document_id, document_chunks in enumerate(documents_chunks):
             for parent_id, parent_chunk in enumerate(document_chunks):
                 children_chunks = child_splitter.split_text(parent_chunk)
+
+                chunk_storage.append({
+                    "document_id": document_id,
+                    "parent_id": parent_id,
+                    "parent_text": parent_chunk
+                })
+
                 for child_id, child_chunk in enumerate(children_chunks):
                     metadata = {
                         "document_id": document_id,
@@ -101,6 +111,9 @@ class Embedder:
                     docs.append(child_doc)
 
         self._storage.add_documents(docs)
+        path = Path(__file__).parent.parent / "storage" / "parent_chunk_storage.json"
+        with open(path, 'w') as file:
+            json.dump(chunk_storage, file, indent=4)
 
     def embed(self, chunk: str):
         """
@@ -137,7 +150,7 @@ class Embedder:
         return self._storage.similarity_search(query, k)
 
 
-## usage example for later:
+# usage example for later:
 if __name__ == "__main__":
     embedder_config = EmbedderConfig(
         parent_chunk_size=5,
