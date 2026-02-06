@@ -15,7 +15,7 @@ from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
 # isort: off
-from embeddings.constants import ( 
+from embeddings.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
