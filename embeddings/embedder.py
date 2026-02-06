@@ -14,11 +14,8 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
-from embeddings.constants import (
-    TEXT_SPLITTER_SEPARATORS,
-    LLMsAndVectorizersStorage,
-    PathsStorage,
-)
+from embeddings.constants import (TEXT_SPLITTER_SEPARATORS,
+                                  LLMsAndVectorizersStorage, PathsStorage)
 from embeddings.models import EmbedderConfig
 
 
