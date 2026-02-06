@@ -55,44 +55,6 @@ class EmbedSparse:
         return qmodels.SparseVector(indices=embedding.indices, values=embedding.values)
 
 
-class EmbedSparse:
-    """
-    Make sparse embeddings
-    """
-
-    def __init__(self, model_name: str = "Qdrant/bm25", device: str = None):
-        """
-        Initialize an instance of class
-        """
-        if device is None:
-            import torch
-
-            self._device = "cuda" if torch.cuda.is_available() else "cpu"
-        else:
-            self._device = device
-
-        self.model = FastEmbedSparse(model_name=model_name, device=self._device)
-
-    def embed_documents(self, texts):
-        """
-        Method to embed documents
-        """
-        embeddings = list(self.model.embed_documents(texts))
-        result = []
-        for embedding in embeddings:
-            indices = embedding.indices
-            values = embedding.values
-            result.append(qmodels.SparseVector(indices=indices, values=values))
-        return result
-
-    def embed_query(self, text):
-        """
-        Method to embed input query
-        """
-        embedding = self.model.embed_documents([text])[0]
-        return qmodels.SparseVector(indices=embedding.indices, values=embedding.values)
-
-
 class Embedder:
     """
     Instance for all operations with embeddings via Qdrant
@@ -223,10 +185,7 @@ class Embedder:
 
         parent_store_file = self._parent_store_path / "parent_chunks_storage.json"
         if parent_store_file.exists():
-            with open(parent_store_file, "r", encoding="utf-8") as file:
-                existing_data = json.load(file)
-            existing_data.extend(chunk_storage)
-            chunk_storage = existing_data
+            parent_store_file.unlink()
 
         with open(parent_store_file, "w", encoding="utf-8") as file:
             json.dump(chunk_storage, file, indent=4, ensure_ascii=False)
@@ -237,7 +196,7 @@ class Embedder:
         """
         return self._dense_embeddings.embed_query(chunk)
 
-    def _init_child_storage(self, recreate_collection: bool = False):
+    def _init_child_storage(self, recreate_collection: bool = True):
         """
         Initializes Qdrant vector storage for hybrid similarity search.
         """
@@ -332,6 +291,7 @@ if __name__ == "__main__":
             "I know that my friend John is very lazy",
             "very bright yellow leafs and red blood",
             "I love to eat yellow snow",
+            "He scores his first goal in professional league"
         ],
         document_ids=[
             "doc1",
@@ -343,10 +303,11 @@ if __name__ == "__main__":
             "doc7",
             "doc8",
             "doc9",
+            "doc10"
         ],  # Optional
     )
 
-    results = embedder.similarity_search("autumn", k=2)
+    results = embedder.similarity_search("football", k=2)
     for doc in results:
         print(f"Content: {doc.page_content}")
         print(f"Metadata: {doc.metadata}")
