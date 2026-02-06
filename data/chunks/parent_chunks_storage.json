@@ -1,0 +1,137 @@
+[
+    {
+        "document_id": "doc1",
+        "parent_id": 0,
+        "parent_text": "# This is a sample text."
+    },
+    {
+        "document_id": "doc2",
+        "parent_id": 0,
+        "parent_text": "### Subsection."
+    },
+    {
+        "document_id": "doc3",
+        "parent_id": 0,
+        "parent_text": "The quick brown fox jumps over the lazy dog."
+    },
+    {
+        "document_id": "doc4",
+        "parent_id": 0,
+        "parent_text": "I believe I can fly"
+    },
+    {
+        "document_id": "doc5",
+        "parent_id": 0,
+        "parent_text": "I love animals"
+    },
+    {
+        "document_id": "doc6",
+        "parent_id": 0,
+        "parent_text": "My father loves my mother very much"
+    },
+    {
+        "document_id": "doc7",
+        "parent_id": 0,
+        "parent_text": "I know that my friend John is very lazy"
+    },
+    {
+        "document_id": "doc8",
+        "parent_id": 0,
+        "parent_text": "very bright yellow leafs and red blood"
+    },
+    {
+        "document_id": "doc9",
+        "parent_id": 0,
+        "parent_text": "I love to eat yellow snow"
+    },
+    {
+        "document_id": "doc1",
+        "parent_id": 0,
+        "parent_text": "# This is a sample text."
+    },
+    {
+        "document_id": "doc2",
+        "parent_id": 0,
+        "parent_text": "### Subsection."
+    },
+    {
+        "document_id": "doc3",
+        "parent_id": 0,
+        "parent_text": "The quick brown fox jumps over the lazy dog."
+    },
+    {
+        "document_id": "doc4",
+        "parent_id": 0,
+        "parent_text": "I believe I can fly"
+    },
+    {
+        "document_id": "doc5",
+        "parent_id": 0,
+        "parent_text": "I love animals"
+    },
+    {
+        "document_id": "doc6",
+        "parent_id": 0,
+        "parent_text": "My father loves my mother very much"
+    },
+    {
+        "document_id": "doc7",
+        "parent_id": 0,
+        "parent_text": "I know that my friend John is very lazy"
+    },
+    {
+        "document_id": "doc8",
+        "parent_id": 0,
+        "parent_text": "very bright yellow leafs and red blood"
+    },
+    {
+        "document_id": "doc9",
+        "parent_id": 0,
+        "parent_text": "I love to eat yellow snow"
+    },
+    {
+        "document_id": "doc1",
+        "parent_id": 0,
+        "parent_text": "# This is a sample text."
+    },
+    {
+        "document_id": "doc2",
+        "parent_id": 0,
+        "parent_text": "### Subsection."
+    },
+    {
+        "document_id": "doc3",
+        "parent_id": 0,
+        "parent_text": "The quick brown fox jumps over the lazy dog."
+    },
+    {
+        "document_id": "doc4",
+        "parent_id": 0,
+        "parent_text": "I believe I can fly"
+    },
+    {
+        "document_id": "doc5",
+        "parent_id": 0,
+        "parent_text": "I love animals"
+    },
+    {
+        "document_id": "doc6",
+        "parent_id": 0,
+        "parent_text": "My father loves my mother very much"
+    },
+    {
+        "document_id": "doc7",
+        "parent_id": 0,
+        "parent_text": "I know that my friend John is very lazy"
+    },
+    {
+        "document_id": "doc8",
+        "parent_id": 0,
+        "parent_text": "very bright yellow leafs and red blood"
+    },
+    {
+        "document_id": "doc9",
+        "parent_id": 0,
+        "parent_text": "I love to eat yellow snow"
+    }
+]
