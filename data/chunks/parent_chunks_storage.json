@@ -48,5 +48,10 @@
         "document_id": "doc10",
         "parent_id": 0,
         "parent_text": "He scores his first goal in professional league"
+    },
+    {
+        "document_id": "doc11",
+        "parent_id": 0,
+        "parent_text": "He is one of the best football players of all time. He is real GOAT!"
     }
 ]

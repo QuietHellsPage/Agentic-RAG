@@ -3,9 +3,9 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import json
-from pathlib import Path
-from typing import Optional
+from typing import Any, Optional
 
+import torch
 from langchain_core.documents import Document
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore, RetrievalMode
@@ -14,28 +14,32 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
+from embeddings.constants import LLMsAndVectorizersStorage, PathsStorage
 from embeddings.models import EmbedderConfig
 
 
-class EmbedSparse:
+class EmbedSparse(FastEmbedSparse):
     """
     Make sparse embeddings
     """
 
-    def __init__(self, model_name: str = "Qdrant/bm25", device: str = None):
+    _model_name = LLMsAndVectorizersStorage.SPARSE_MODEL_NAME.value
+
+    def __init__(self, device: str) -> None:
         """
         Initialize an instance of class
         """
+        super().__init__()
+        self._device: str
         if device is None:
-            import torch
 
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self._device = device
 
-        self.model = FastEmbedSparse(model_name=model_name, device=self._device)
+        self.model = FastEmbedSparse(model_name=self._model_name, device=self._device)
 
-    def embed_documents(self, texts):
+    def embed_documents(self, texts: list[str]) -> list[qmodels.SparseVector]:
         """
         Method to embed documents
         """
@@ -47,7 +51,7 @@ class EmbedSparse:
             result.append(qmodels.SparseVector(indices=indices, values=values))
         return result
 
-    def embed_query(self, text):
+    def embed_query(self, text: str) -> list[qmodels.SparseVector]:
         """
         Method to embed input query
         """
@@ -55,28 +59,27 @@ class EmbedSparse:
         return qmodels.SparseVector(indices=embedding.indices, values=embedding.values)
 
 
-class Embedder:
+class Embedder:  # pylint: disable=R0902
     """
     Instance for all operations with embeddings via Qdrant
     """
+
+    _qdrant_path = PathsStorage.QDRANT_PATH.value
+    _parent_store_path = PathsStorage.PARENT_CHUNKS_PATH.value
+    _child_collection = PathsStorage.CHILD_COLLECTION.value
+    _dense_model_name = LLMsAndVectorizersStorage.DENSE_MODEL_NAME.value
+    _sparse_model_name = LLMsAndVectorizersStorage.SPARSE_MODEL_NAME.value
 
     def __init__(
         self,
         config: EmbedderConfig,
         device: Optional[str] = None,
-        qdrant_path: str = None,
-        parent_store_path: str = "data/chunks",
-        child_collection: str = "document_child_chunks",
-        dense_model_name: str = "Qwen/Qwen3-Embedding-0.6B",
-        sparse_model_name: str = "Qdrant/bm25",
-        recreate_collection: bool = False,
-    ):
+        recreate_collection: bool = True,
+    ) -> None:
         """
         Embedding model wrapper for Qdrant.
         """
         if device is None:
-            import torch
-
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self._device = device
@@ -85,26 +88,23 @@ class Embedder:
         self._child_chunk_size = config.child_chunk_size
         self._parent_chunk_overlap = config.parent_chunk_overlap
         self._child_chunk_overlap = config.child_chunk_overlap
-        self._qdrant_path = Path(qdrant_path)
-        self._parent_store_path = Path(parent_store_path)
-        self._child_collection = child_collection
 
         self._qdrant_path.parent.mkdir(parents=True, exist_ok=True)
         self._parent_store_path.mkdir(parents=True, exist_ok=True)
 
         self._dense_embeddings = HuggingFaceEmbeddings(
-            model_name=dense_model_name,
+            model_name=self._dense_model_name,
             model_kwargs={"device": self._device},
         )
 
-        self._sparse_embeddings = EmbedSparse(
-            model_name=sparse_model_name, device=self._device
-        )
+        self._sparse_embeddings = EmbedSparse(device=self._device)
 
         self._client = QdrantClient(path=str(self._qdrant_path))
         self._child_vector_store = self._init_child_storage(recreate_collection)
 
-    def add_documents(self, texts: list[str], document_ids: Optional[list[str]] = None):
+    def add_documents(
+        self, texts: list[str], document_ids: Optional[list[str]] = None
+    ) -> None:
         """
         Tokenizes, embeds texts and adds to Qdrant.
         """
@@ -150,15 +150,13 @@ class Embedder:
             ],
         )
 
-        documents_chunks = [parent_splitter.split_text(text) for text in texts]
         docs = []
         chunk_storage = []
 
         for doc_idx, (document_id, document_chunks) in enumerate(
-            zip(document_ids, documents_chunks)
+            zip(document_ids, [parent_splitter.split_text(text) for text in texts])
         ):
             for parent_id, parent_chunk in enumerate(document_chunks):
-                children_chunks = child_splitter.split_text(parent_chunk)
 
                 chunk_storage.append(
                     {
@@ -168,7 +166,9 @@ class Embedder:
                     }
                 )
 
-                for child_id, child_chunk in enumerate(children_chunks):
+                for child_id, child_chunk in enumerate(
+                    child_splitter.split_text(parent_chunk)
+                ):
                     docs.append(
                         Document(
                             page_content=child_chunk,
@@ -190,13 +190,15 @@ class Embedder:
         with open(parent_store_file, "w", encoding="utf-8") as file:
             json.dump(chunk_storage, file, indent=4, ensure_ascii=False)
 
-    def embed(self, chunk: str):
+    def embed(self, chunk: str) -> list[float]:
         """
         Embed single chunk (dense only)
         """
         return self._dense_embeddings.embed_query(chunk)
 
-    def _init_child_storage(self, recreate_collection: bool = True):
+    def _init_child_storage(
+        self, recreate_collection: bool = True
+    ) -> QdrantVectorStore:
         """
         Initializes Qdrant vector storage for hybrid similarity search.
         """
@@ -231,7 +233,7 @@ class Embedder:
 
     def similarity_search(
         self, query: str, k: int = 5, filter_dict: Optional[dict] = None
-    ):
+    ) -> list[Document]:
         """
         Performs hybrid similarity search on a given query.
         """
@@ -241,7 +243,7 @@ class Embedder:
 
     def similarity_search_with_score(
         self, query: str, k: int = 5, filter_dict: Optional[dict] = None
-    ):
+    ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores.
         """
@@ -249,7 +251,9 @@ class Embedder:
             query=query, k=k, filter=filter_dict
         )
 
-    def get_parent_chunks(self, document_id: Optional[str] = None):
+    def get_parent_chunks(
+        self, document_id: Optional[str] = None
+    ) -> list | list[Any] | Any:
         """
         Retrieve parent chunks from storage.
         """
@@ -273,12 +277,7 @@ if __name__ == "__main__":
         child_chunk_overlap=128,
     )
 
-    embedder = Embedder(
-        config=embedder_config,
-        qdrant_path="data/qdrant_db",
-        parent_store_path="data/chunks",
-        recreate_collection=True,
-    )
+    embedder = Embedder(config=embedder_config, recreate_collection=True)
 
     embedder.add_documents(
         texts=[
@@ -291,7 +290,8 @@ if __name__ == "__main__":
             "I know that my friend John is very lazy",
             "very bright yellow leafs and red blood",
             "I love to eat yellow snow",
-            "He scores his first goal in professional league"
+            "He scores his first goal in professional league",
+            "He is one of the best football players of all time. He is real GOAT!",
         ],
         document_ids=[
             "doc1",
@@ -303,7 +303,8 @@ if __name__ == "__main__":
             "doc7",
             "doc8",
             "doc9",
-            "doc10"
+            "doc10",
+            "doc11",
         ],  # Optional
     )
 
