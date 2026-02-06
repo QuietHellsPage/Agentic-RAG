@@ -5,15 +5,51 @@ Module to operate processing of raw text and saving it to vector db
 import json
 from pathlib import Path
 
+from langchain_huggingface import HuggingFaceEmbeddings
 import faiss
-import torch
+from langchain_qdrant import QdrantVectorStore, RetrievalMode
+from qdrant_client import QdrantClient
 from langchain_community.docstore.in_memory import InMemoryDocstore
 from langchain_community.vectorstores import FAISS
 from langchain_core.documents import Document
-from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-
+from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from embeddings.models import EmbedderConfig
+from qdrant_client.http import models as qmodels
+
+PARENT_STORE_PATH = "parent_store"  # Directory for parent chunk JSON files
+CHILD_COLLECTION = "document_child_chunks"
+
+
+
+client = QdrantClient(path="data/vector_db")
+
+embeddings_dimension = len(dense_embeddings.embed_query("test"))
+
+def create_collection(name):
+    if not client.collection_exists(name):
+        client.create_collection(collection_name=name,
+                                 vectors_config=qmodels.VectorParams(size=embeddings_dimension, distance=qmodels.Distance.COSINE),
+                                 sparse_vectors_config={"sparse": qmodels.SparseVectorParams()})
+        print("Created collection")
+    else:
+        print("Collection exists")
+
+
+if client.collection_exists(CHILD_COLLECTION):
+    client.delete_collection(CHILD_COLLECTION)
+    create_collection(CHILD_COLLECTION)
+else:
+    create_collection(CHILD_COLLECTION)
+
+child_vector_store = QdrantVectorStore(
+    client=client,
+    collection_name=CHILD_COLLECTION,
+    embedding=dense_embeddings,
+    sparse_embedding=sparse_embeddings,
+    retrieval_mode=RetrievalMode.HYBRID,
+    sparse_vector_name="sparse"
+)
 
 
 class Embedder:
@@ -21,7 +57,7 @@ class Embedder:
     Instance for all operations with embeddings
     """
 
-    def __init__(self, config: EmbedderConfig, device: str | None = None):
+    def __init__(self, config: EmbedderConfig, qdrant_path, collection_name, device=None):
         """
         Embedding model wrapper.
         :param parent_chunk_size: Number of tokens in a parent chunk.
@@ -30,6 +66,7 @@ class Embedder:
         """
 
         if device is None:
+            import torch
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self._device = device
@@ -37,11 +74,12 @@ class Embedder:
         self._child_chunk_size = config.child_chunk_size
         self._parent_chunk_overlap = config.parent_chunk_overlap
         self._child_chunk_overlap = config.child_chunk_overlap
-        self._model = HuggingFaceEmbeddings(
+        self._dense_embeddings = HuggingFaceEmbeddings(
             model_name="Qwen/Qwen3-Embedding-0.6B",  # TODO: larger model # pylint: disable=fixme
             model_kwargs={"device": self._device},
         )
-        self._storage = self._init_storage()
+        self._sparse_embeddings = FastEmbedSparse(model_name="Qdrant/bm25")
+        self._storage = self._init_storage(qdrant_path, collection_name)
 
     def add_documents(self, texts: list[str]):
         """
