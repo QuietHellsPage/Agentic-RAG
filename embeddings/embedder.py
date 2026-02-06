@@ -2,6 +2,9 @@
 Module to operate processing of raw text and saving it to vector db
 """
 
+import json
+from pathlib import Path
+
 import faiss
 import torch
 from langchain_community.docstore.in_memory import InMemoryDocstore
@@ -87,20 +90,39 @@ class Embedder:
 
         documents_chunks = [parent_splitter.split_text(text) for text in texts]
         docs = []
+        chunk_storage = []
 
         for document_id, document_chunks in enumerate(documents_chunks):
             for parent_id, parent_chunk in enumerate(document_chunks):
                 children_chunks = child_splitter.split_text(parent_chunk)
-                for child_id, child_chunk in enumerate(children_chunks):
-                    metadata = {
+
+                chunk_storage.append(
+                    {
                         "document_id": document_id,
                         "parent_id": parent_id,
-                        "chunk_id": child_id,
+                        "parent_text": parent_chunk,
                     }
-                    child_doc = Document(child_chunk, metadata=metadata)
-                    docs.append(child_doc)
+                )
+
+                for child_id, child_chunk in enumerate(children_chunks):
+                    docs.append(
+                        Document(
+                            child_chunk,
+                            metadata={
+                                "document_id": document_id,
+                                "parent_id": parent_id,
+                                "chunk_id": child_id,
+                            },
+                        )
+                    )
 
         self._storage.add_documents(docs)
+        with open(
+            Path(__file__).parent.parent / "storage" / "parent_chunk_storage.json",
+            "w",
+            encoding="utf-8",
+        ) as file:
+            json.dump(chunk_storage, file, indent=4)
 
     def embed(self, chunk: str):
         """
@@ -137,7 +159,7 @@ class Embedder:
         return self._storage.similarity_search(query, k)
 
 
-## usage example for later:
+# usage example for later:
 if __name__ == "__main__":
     embedder_config = EmbedderConfig(
         parent_chunk_size=5,
