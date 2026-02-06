@@ -12,7 +12,7 @@ click==8.3.1
 colorama==0.4.6
 dataclasses-json==0.6.7
 dill==0.4.1
-faiss-cpu==1.8.0
+faiss-cpu
 fastembed==0.7.4
 filelock==3.20.3
 flatbuffers==25.12.19
