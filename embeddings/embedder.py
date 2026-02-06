@@ -3,7 +3,7 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import json
-from typing import Any, Optional
+from typing import Optional
 
 import torch
 from langchain_core.documents import Document
@@ -14,7 +14,11 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
-from embeddings.constants import LLMsAndVectorizersStorage, PathsStorage
+from embeddings.constants import (
+    TEXT_SPLITTER_SEPARATORS,
+    LLMsAndVectorizersStorage,
+    PathsStorage,
+)
 from embeddings.models import EmbedderConfig
 
 
@@ -28,6 +32,9 @@ class EmbedSparse(FastEmbedSparse):
     def __init__(self, device: str) -> None:
         """
         Initialize an instance of class
+
+        Args:
+            device (str): Device that operates embeddings processing
         """
         super().__init__()
         self._device: str
@@ -42,6 +49,12 @@ class EmbedSparse(FastEmbedSparse):
     def embed_documents(self, texts: list[str]) -> list[qmodels.SparseVector]:
         """
         Method to embed documents
+
+        Args:
+            texts (list[str]): Texts that have to be processed in embeddings
+
+        Returns:
+            list[qmodels.SparseVector]: Massive of sparse vectors
         """
         embeddings = list(self.model.embed_documents(texts))
         result = []
@@ -54,6 +67,12 @@ class EmbedSparse(FastEmbedSparse):
     def embed_query(self, text: str) -> list[qmodels.SparseVector]:
         """
         Method to embed input query
+
+        Args:
+            text (str): Input query
+
+        Returns:
+            list[qmodels.SparseVector]: Embedded query
         """
         embedding = self.model.embed_documents([text])[0]
         return qmodels.SparseVector(indices=embedding.indices, values=embedding.values)
@@ -78,6 +97,11 @@ class Embedder:  # pylint: disable=R0902
     ) -> None:
         """
         Embedding model wrapper for Qdrant.
+
+        Args:
+            config (EmbedderConfig): Configuration for embedder
+            device (Optional[str]): Device that operates embeddings processing
+            recreate_collection (bool): Flag to recreate collection
         """
         if device is None:
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -107,6 +131,10 @@ class Embedder:  # pylint: disable=R0902
     ) -> None:
         """
         Tokenizes, embeds texts and adds to Qdrant.
+
+        Args:
+            texts (list[str]): Texts to be split into chunks
+            document_ids (Optional[list[str]]): IDs of documents
         """
         if document_ids is None:
             document_ids = [str(i) for i in range(len(texts))]
@@ -114,40 +142,12 @@ class Embedder:  # pylint: disable=R0902
         parent_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self._parent_chunk_size,
             chunk_overlap=self._parent_chunk_overlap,
-            separators=[
-                "\n#",
-                "\n##",
-                "\n###",
-                "\n####",
-                "\n#####",
-                "\n######",
-                "\n\n",
-                "\n",
-                ".",
-                "?",
-                "!",
-                " ",
-                "",
-            ],
+            separators=TEXT_SPLITTER_SEPARATORS,
         )
         child_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self._child_chunk_size,
             chunk_overlap=self._child_chunk_overlap,
-            separators=[
-                "\n#",
-                "\n##",
-                "\n###",
-                "\n####",
-                "\n#####",
-                "\n######",
-                "\n\n",
-                "\n",
-                ".",
-                "?",
-                "!",
-                " ",
-                "",
-            ],
+            separators=TEXT_SPLITTER_SEPARATORS,
         )
 
         docs = []
@@ -183,24 +183,23 @@ class Embedder:  # pylint: disable=R0902
 
         self._child_vector_store.add_documents(docs)
 
-        parent_store_file = self._parent_store_path / "parent_chunks_storage.json"
-        if parent_store_file.exists():
+        if (parent_store_file := PathsStorage.PARENT_COLLECTION.value).exists():
             parent_store_file.unlink()
 
         with open(parent_store_file, "w", encoding="utf-8") as file:
             json.dump(chunk_storage, file, indent=4, ensure_ascii=False)
-
-    def embed(self, chunk: str) -> list[float]:
-        """
-        Embed single chunk (dense only)
-        """
-        return self._dense_embeddings.embed_query(chunk)
 
     def _init_child_storage(
         self, recreate_collection: bool = True
     ) -> QdrantVectorStore:
         """
         Initializes Qdrant vector storage for hybrid similarity search.
+
+        Args:
+            recreate_collection (bool): Flag to recreate collection
+
+        Returns:
+            QdrantVectorStore: Storage of embeddings
         """
         embeddings_dimension = len(self._dense_embeddings.embed_query("test"))
 
@@ -231,42 +230,33 @@ class Embedder:  # pylint: disable=R0902
         )
         return vector_store
 
-    def similarity_search(
-        self, query: str, k: int = 5, filter_dict: Optional[dict] = None
-    ) -> list[Document]:
+    def similarity_search(self, query: str, k: int = 5) -> list[Document]:
         """
         Performs hybrid similarity search on a given query.
-        """
-        return self._child_vector_store.similarity_search(
-            query=query, k=k, filter=filter_dict
-        )
 
-    def similarity_search_with_score(
-        self, query: str, k: int = 5, filter_dict: Optional[dict] = None
+        Args:
+            query (str): Input query
+            k (int): K nearest neighbours
+
+        Returns:
+            list[Document]: Massive of found documents
+        """
+        return self._child_vector_store.similarity_search(query=query, k=k)
+
+    def similarity_search_with_score(  # For future maybe
+        self, query: str, k: int = 5
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores.
-        """
-        return self._child_vector_store.similarity_search_with_score(
-            query=query, k=k, filter=filter_dict
-        )
 
-    def get_parent_chunks(
-        self, document_id: Optional[str] = None
-    ) -> list | list[Any] | Any:
-        """
-        Retrieve parent chunks from storage.
-        """
-        parent_store_file = self._parent_store_path / "parent_chunks_storage.json"
-        if not parent_store_file.exists():
-            return []
+        Args:
+            query (str): Input query
+            k (int): K nearest neighbours
 
-        with open(parent_store_file, "r", encoding="utf-8") as file:
-            data = json.load(file)
-
-        if document_id:
-            return [item for item in data if item["document_id"] == document_id]
-        return data
+        Returns:
+            list[tuple[Document, float]]: Massive of found documents with scores
+        """
+        return self._child_vector_store.similarity_search_with_score(query=query, k=k)
 
 
 if __name__ == "__main__":
