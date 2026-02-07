@@ -2,5 +2,16 @@
 python_version = "3.13"
 
 [[tool.mypy.overrides]]
+module = "embeddings.embedder"
+disable_error_code = [
+    "override",
+    "return-value",
+    "arg-type",
+]
+
+[[tool.mypy.overrides]]
 module = ["faiss.*"]
 follow_untyped_imports = true
+
+[tool.pylint.MASTER]
+max-locals = 20

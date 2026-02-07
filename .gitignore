@@ -3,3 +3,7 @@ venv
 .mypy_cache
 __pycache__/
 dist/
+.DS_Store
+.lock
+meta.json
+storage.sqlite
