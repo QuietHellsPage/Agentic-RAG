@@ -1,57 +1,12 @@
 [
     {
-        "document_id": "doc1",
+        "document_id": "0",
         "parent_id": 0,
-        "parent_text": "# This is a sample text."
+        "parent_text": "### 4 #### How Language Works Journalists say that when a dog bites a man that is not news, but when a man bites a dog that is news. This is the essence of the language instinct: language conveys news. The streams of words called are not just memory prods, reminding you of man and man's best friend and letting you fill in the rest; they tell you who in fact did what to whom. Thus we get more from most stretches of language than Woody Allen got from _War and Peace,_ which he read in two hours after taking speed-reading lessons: Language allows us to know how octopuses make love and how to remove cherry stains and why Tad was heartbroken, and whether the Red Sox will win the World Series without a good relief pitcher and how to build an atom bomb in your basement and how Catherine the Great died, among other things"
     },
     {
-        "document_id": "doc2",
-        "parent_id": 0,
-        "parent_text": "### Subsection."
-    },
-    {
-        "document_id": "doc3",
-        "parent_id": 0,
-        "parent_text": "The quick brown fox jumps over the lazy dog."
-    },
-    {
-        "document_id": "doc4",
-        "parent_id": 0,
-        "parent_text": "I believe I can fly"
-    },
-    {
-        "document_id": "doc5",
-        "parent_id": 0,
-        "parent_text": "I love animals"
-    },
-    {
-        "document_id": "doc6",
-        "parent_id": 0,
-        "parent_text": "My father loves my mother very much"
-    },
-    {
-        "document_id": "doc7",
-        "parent_id": 0,
-        "parent_text": "I know that my friend John is very lazy"
-    },
-    {
-        "document_id": "doc8",
-        "parent_id": 0,
-        "parent_text": "very bright yellow leafs and red blood"
-    },
-    {
-        "document_id": "doc9",
-        "parent_id": 0,
-        "parent_text": "I love to eat yellow snow"
-    },
-    {
-        "document_id": "doc10",
-        "parent_id": 0,
-        "parent_text": "He scores his first goal in professional league"
-    },
-    {
-        "document_id": "doc11",
-        "parent_id": 0,
-        "parent_text": "He is one of the best football players of all time. He is real GOAT!"
+        "document_id": "0",
+        "parent_id": 1,
+        "parent_text": ". When scientists see some apparent magic trick in nature, like bats homing in on insects in pitch blackness or salmon returning to breed in their natal stream, they look for the engineering principles behind it. For bats, the trick turned out to be sonar; for salmon, it was locking in to a faint scent trail. What is the trick behind the ability of _Homo_ _sapiens_ to convey that man bites dog? In fact there is not one trick but two, and they are associated with the names of two European scholars who wrote in the nineteenth century. The first principle, articulated by the Swiss linguist Ferdinand de Saussure, is \"the arbitrariness of the sign,\" the wholly conventional pairing of a sound with a meaning. The word _dog_ does not look like a dog, walk like a dog, or woof like a dog, but it means"
     }
 ]

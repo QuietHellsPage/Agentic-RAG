@@ -5,23 +5,12 @@ Constants for processing embeddings
 from enum import Enum, StrEnum
 from pathlib import Path
 
-PROJECT_ROOT = PROJECT_ROOT = Path(__file__).parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent
 DATA_PATH = PROJECT_ROOT / "data"
 
 TEXT_SPLITTER_SEPARATORS = [
-    "\n#",
-    "\n##",
-    "\n###",
-    "\n####",
-    "\n#####",
-    "\n######",
-    "\n\n",
-    "\n",
-    ".",
-    "?",
-    "!",
-    " ",
-    "",
+    "\n#", "\n##", "\n###", "\n####", "\n#####", "\n######",
+    "\n\n", "\n", ". ", "? ", "! ", ""
 ]
 
 
@@ -34,6 +23,8 @@ class PathsStorage(Enum):
     PARENT_CHUNKS_PATH = DATA_PATH / "chunks"
     CHILD_COLLECTION = "document_child_chunks"
     PARENT_COLLECTION = PARENT_CHUNKS_PATH / "parent_chunks_storage.json"
+    RAW_PDF_COLLECTION = DATA_PATH / "raw_texts" / "pdf_storage"
+    RAW_MD_COLLECTION = DATA_PATH / "raw_texts" / "md_storage"
 
 
 class LLMsAndVectorizersStorage(StrEnum):

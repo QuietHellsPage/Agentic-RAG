@@ -15,7 +15,7 @@ from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
 # isort: off
-from embeddings.constants import (
+from config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
@@ -144,11 +144,13 @@ class Embedder:  # pylint: disable=R0902
             chunk_size=self._parent_chunk_size,
             chunk_overlap=self._parent_chunk_overlap,
             separators=TEXT_SPLITTER_SEPARATORS,
+            length_function=len,
         )
         child_splitter = RecursiveCharacterTextSplitter(
             chunk_size=self._child_chunk_size,
             chunk_overlap=self._child_chunk_overlap,
             separators=TEXT_SPLITTER_SEPARATORS,
+            length_function=len,
         )
 
         docs = []
