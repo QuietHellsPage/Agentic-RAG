@@ -5,7 +5,7 @@ Constants for processing workflow
 from enum import Enum, StrEnum
 from pathlib import Path
 
-PROJECT_ROOT = PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data"
 
 TEXT_SPLITTER_SEPARATORS = [
