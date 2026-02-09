@@ -10,7 +10,7 @@ DATA_PATH = PROJECT_ROOT / "data"
 
 TEXT_SPLITTER_SEPARATORS = [
     "\n#", "\n##", "\n###", "\n####", "\n#####", "\n######",
-    "\n\n", "\n", ". ", "? ", "! ", ""
+    "\n\n", "\n", ". ",
 ]
 
 
