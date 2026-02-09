@@ -2,11 +2,10 @@
 python_version = "3.13"
 
 [[tool.mypy.overrides]]
-module = "embeddings.embedder"
+module = "src.embeddings.embedder"
 disable_error_code = [
     "override",
     "return-value",
-    "arg-type",
 ]
 
 [[tool.mypy.overrides]]
@@ -15,3 +14,6 @@ follow_untyped_imports = true
 
 [tool.pylint.MASTER]
 max-locals = 20
+
+[tool.pylint.'design']
+min-public-methods = 1
