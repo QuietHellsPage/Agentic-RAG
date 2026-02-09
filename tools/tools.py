@@ -44,9 +44,8 @@ class AgentTools:
             Returns:
                 str: Massive of chunks found
             """
-            results = self.embedder.similarity_search_with_score(query, limit)
-            filtered_results = [(doc, score) for doc, score in results if score > 0.6]
-            if not filtered_results:
+            results = self.embedder.similarity_search_with_score_and_threshold(query, limit)
+            if not results:
                 return "NO RELEVANT CHUNKS FOUND"
 
             return "\n\n".join(
@@ -55,7 +54,7 @@ class AgentTools:
                     f"Document ID: {doc.metadata.get("document_id", "NO DOCUMENT ID")}\n"
                     f"Chunk ID: {doc.metadata.get("chunk_id", "NO CHUNK ID")}\n"
                     f"Content: {doc.page_content.strip()}"
-                    for doc in filtered_results
+                    for doc in results
                 ]
             )
 

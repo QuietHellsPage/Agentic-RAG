@@ -258,6 +258,44 @@ class Embedder:  # pylint: disable=R0902
             list[tuple[Document, float]]: Massive of found documents with scores
         """
         return self._child_vector_store.similarity_search_with_score(query=query, k=k)
+
+    def similarity_search_with_threshold(
+        self, query: str, k: int = 5, threshold: float = 0.6
+    ) -> list[Document]:
+        """
+        Performs hybrid similarity search with threshold filtering.
+        
+        Args:
+            query (str): Input query
+            k (int): K nearest neighbours
+            threshold (float): Minimum similarity score
+            
+        Returns:
+            list[Document]: Filtered documents
+        """
+        results_with_scores = self.similarity_search_with_score(query, k)
+        filtered_results = [
+            doc for doc, score in results_with_scores if score > threshold
+        ]
+        return filtered_results
+
+    def similarity_search_with_score_and_threshold(
+        self, query: str, k: int = 4, threshold: float = 0.6
+    ) -> list[tuple[Document, float]]:
+        """
+        Performs hybrid similarity search with scores and threshold.
+        
+        Args:
+            query (str): Input query
+            k (int): K nearest neighbours
+            threshold (float): Minimum similarity score
+            
+        Returns:
+            list[tuple[Document, float]]: Filtered documents with scores
+        """
+        results = self.similarity_search_with_score(query, k)
+        filtered_results = [(doc, score) for doc, score in results if score > threshold]
+        return filtered_results
     
     def get_tools(self) -> None:
         """

@@ -4,6 +4,4 @@ venv
 __pycache__/
 dist/
 .DS_Store
-.lock
-meta.json
-storage.sqlite
+data/
