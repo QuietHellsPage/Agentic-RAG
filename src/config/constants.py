@@ -1,5 +1,5 @@
 """
-Constants for processing embeddings
+Constants for processing workflow
 """
 
 from enum import Enum, StrEnum
