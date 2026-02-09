@@ -21,7 +21,7 @@ from embeddings.constants import (
     PathsStorage,
 )
 from embeddings.models import EmbedderConfig
-
+from tools.tools import AgentTools
 
 class EmbedSparse(FastEmbedSparse):
     """
@@ -258,6 +258,13 @@ class Embedder:  # pylint: disable=R0902
             list[tuple[Document, float]]: Massive of found documents with scores
         """
         return self._child_vector_store.similarity_search_with_score(query=query, k=k)
+    
+    def get_tools(self) -> None:
+        """
+        Method that gets tools for agent by using self
+        """
+        tools = AgentTools(self)
+        return tools.create_tools()
 
 
 if __name__ == "__main__":
