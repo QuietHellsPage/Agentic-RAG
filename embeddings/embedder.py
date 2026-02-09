@@ -23,6 +23,7 @@ from embeddings.constants import (
 from embeddings.models import EmbedderConfig
 from tools.tools import AgentTools
 
+
 class EmbedSparse(FastEmbedSparse):
     """
     Make sparse embeddings
@@ -264,12 +265,12 @@ class Embedder:  # pylint: disable=R0902
     ) -> list[Document]:
         """
         Performs hybrid similarity search with threshold filtering.
-        
+
         Args:
             query (str): Input query
             k (int): K nearest neighbours
             threshold (float): Minimum similarity score
-            
+
         Returns:
             list[Document]: Filtered documents
         """
@@ -284,19 +285,19 @@ class Embedder:  # pylint: disable=R0902
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores and threshold.
-        
+
         Args:
             query (str): Input query
             k (int): K nearest neighbours
             threshold (float): Minimum similarity score
-            
+
         Returns:
             list[tuple[Document, float]]: Filtered documents with scores
         """
-        results = self.similarity_search_with_score(query, k)
-        filtered_results = [(doc, score) for doc, score in results if score > threshold]
+        result = self.similarity_search_with_score(query, k)
+        filtered_results = [(doc, score) for doc, score in result if score > threshold]
         return filtered_results
-    
+
     def get_tools(self) -> None:
         """
         Method that gets tools for agent by using self

@@ -12,6 +12,7 @@ from embeddings.constants import PathsStorage
 if TYPE_CHECKING:
     from embeddings.embedder import Embedder
 
+
 class AgentTools:
     """
     Class that operates creating tools
@@ -27,7 +28,7 @@ class AgentTools:
         self.embedder = embedder
         self.parent_store_path = embedder._parent_store_path
 
-    def create_tools(self) -> tuple[BaseTool]:
+    def create_tools(self) -> tuple[BaseTool, ...]:
         """
         Method that creates all tools for agent
         """
@@ -44,7 +45,9 @@ class AgentTools:
             Returns:
                 str: Massive of chunks found
             """
-            results = self.embedder.similarity_search_with_score_and_threshold(query, limit)
+            results = self.embedder.similarity_search_with_score_and_threshold(
+                query, limit
+            )
             if not results:
                 return "NO RELEVANT CHUNKS FOUND"
 
@@ -54,7 +57,7 @@ class AgentTools:
                     f"Document ID: {doc.metadata.get("document_id", "NO DOCUMENT ID")}\n"
                     f"Chunk ID: {doc.metadata.get("chunk_id", "NO CHUNK ID")}\n"
                     f"Content: {doc.page_content.strip()}"
-                    for doc in results
+                    for doc, _ in results
                 ]
             )
 
@@ -82,9 +85,9 @@ class AgentTools:
                     and str(item.get("parent_id")) == parent_id
                 ):
                     return (
-                        f"Document ID: {item.get('document_id', '')}\n"
-                        f"Parent ID: {item.get('parent_id', '')}\n"
-                        f"Content: {item.get('parent_text', '').strip()}"
+                        f"Document ID: {item.get("document_id", "")}\n"
+                        f"Parent ID: {item.get("parent_id", "")}\n"
+                        f"Content: {item.get("parent_text", "").strip()}"
                     )
 
             return "PARENT_CHUNK_NOT_FOUND"

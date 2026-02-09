@@ -15,3 +15,6 @@ follow_untyped_imports = true
 
 [tool.pylint.MASTER]
 max-locals = 20
+
+[tool.pylint.'design']
+min-public-methods = 1
