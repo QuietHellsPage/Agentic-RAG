@@ -5,9 +5,9 @@ Main module of the program
 # from langchain_core.prompts import ChatPromptTemplate
 # from langchain_ollama import ChatOllama
 
-# from embeddings.constants import PROMPT_TEMPLATE
-# from embeddings.embedder import Embedder
-# from embeddings.models import EmbedderConfig
+# from src.config.constants import PROMPT_TEMPLATE
+# from src.embeddings.embedder import Embedder
+# from src.embeddings.models import EmbedderConfig
 
 # if __name__ == "__main__":
 #     embedder_config = EmbedderConfig(
@@ -17,9 +17,9 @@ Main module of the program
 #         child_chunk_overlap=256,
 #     )
 
-#     embedder = Embedder(config=embedder_config, recreate_collection=True)
+#     embedder = Embedder(config=embedder_config, recreate_collection=False)
 
-#     with open("data/raw_texts/md_storage/pinker.md", "r", encoding="utf-8") as file:
+#     with open("pinker.md", "r", encoding="utf-8") as file:
 #         data = file.read()
 
 #     embedder.add_documents(
@@ -28,7 +28,7 @@ Main module of the program
 #         ],
 #     )
 #     tools = embedder.get_tools()
-#     query_text = "What is BEV?"
+#     query_text = "What is SLI?"
 #     results = embedder.similarity_search_with_score(query_text, 4)
 #     context_text = "\n\n---\n\n".join([doc.page_content for doc, _ in results])
 #     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)

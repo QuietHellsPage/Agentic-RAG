@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 
 from langchain_core.tools import BaseTool, tool
 
-from embeddings.constants import PathsStorage
+from src.config.constants import PathsStorage
 
 if TYPE_CHECKING:
-    from embeddings.embedder import Embedder
+    from src.embeddings.embedder import Embedder
 
 
 class AgentTools:

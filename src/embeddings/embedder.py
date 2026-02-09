@@ -15,13 +15,13 @@ from qdrant_client import QdrantClient
 from qdrant_client import models as qmodels
 
 # isort: off
-from embeddings.constants import (
+from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
 )
-from embeddings.models import EmbedderConfig
-from tools.tools import AgentTools
+from src.embeddings.models import EmbedderConfig
+from src.tools.tools import AgentTools
 
 
 class EmbedSparse(FastEmbedSparse):
@@ -192,7 +192,7 @@ class Embedder:  # pylint: disable=R0902
             json.dump(chunk_storage, file, indent=4, ensure_ascii=False)
 
     def _init_child_storage(
-        self, recreate_collection: bool = True
+        self, recreate_collection: bool = False
     ) -> QdrantVectorStore:
         """
         Initializes Qdrant vector storage for hybrid similarity search.
