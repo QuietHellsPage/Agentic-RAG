@@ -1,6 +1,11 @@
+"""
+Create graph db and process text
+"""
+
 from langchain_core.documents import Document
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 
+# isort: off
 from src.config.constants import GraphAllowedConstants, LLMsAndVectorizersStorage
 from src.graph_db.graph import Graph
 
@@ -29,4 +34,4 @@ if __name__ == "__main__":
 
     data = graph_transformer.convert_to_graph_documents(documents=documents)
     print(data)
-    graph.add_data(data=data)
+    graph.add_data(data=data)  # type: ignore[arg-type]

@@ -1,4 +1,9 @@
+"""
+Graph class instance
+"""
+
 from langchain_neo4j import Neo4jGraph
+from langchain_neo4j.graphs.graph_document import GraphDocument
 
 from src.config.constants import GraphInitializerStorage
 
@@ -29,7 +34,7 @@ class Graph:
         """
         self._graph.query(query)
 
-    def add_data(self, data: str) -> None:
+    def add_data(self, data: list[GraphDocument]) -> None:
         """
         Method that adds data to graph
 
