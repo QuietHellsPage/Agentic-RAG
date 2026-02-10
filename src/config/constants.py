@@ -5,6 +5,8 @@ Constants for processing workflow
 from enum import Enum, StrEnum
 from pathlib import Path
 
+from langchain_ollama import ChatOllama
+
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data"
 
@@ -36,14 +38,56 @@ class PathsStorage(Enum):
     PARENT_COLLECTION = PARENT_CHUNKS_PATH / "parent_chunks_storage.json"
 
 
-class LLMsAndVectorizersStorage(StrEnum):
+class LLMsAndVectorizersStorage(Enum):
     """
     Storage for LLMs and vectorizers that are used
     """
 
     DENSE_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
     SPARSE_MODEL_NAME = "Qdrant/bm25"
+    GRAPH_LLM = ChatOllama(model="mistral")
 
+
+class GraphLabelsStorage(StrEnum):
+    """
+    Storage of enum values for LLM to identify entities
+    """
+
+    PERSON = "person"
+    COMPANY = "company"
+    PRODUCT = "product"
+
+
+class GraphAllowedConstants(Enum):
+    """
+    Storage for constants required for extracting entities
+    """
+
+    ALLOWED_NODES = ["Person", "Organization", "Location", "Award", "ResearchField"]
+    ALLOWED_RELATIONSHIPS = [
+        ("Person", "SPOUSE", "Person"),
+        ("Person", "AWARD", "Award"),
+        ("Person", "WORKS_AT", "Organization"),
+        ("Organization", "IN_LOCATION", "Location"),
+        ("Person", "FIELD_OF_RESEARCH", "ResearchField"),
+    ]
+    NODE_PROPERTIES = True
+    RELATIONSHIPS_PROPERTIES = True
+    STRICT_MODE = False
+
+
+class GraphInitializerStorage(Enum):
+    """
+    Storage for graph db initialization
+    """
+
+    URL = "neo4j://localhost:7687"
+    USERNAME = "neo4j"
+    PASSWORD = "neo4jneo4j"
+    REFRESH_SCHEMA = False
+
+
+ENUM_VALUES = [item.value for item in GraphLabelsStorage]
 
 PROMPT_TEMPLATE = """
 You are a helpful AI assistant that answers questions based on the provided context.
