@@ -24,6 +24,15 @@ class Graph:
             refresh_schema=GraphInitializerStorage.REFRESH_SCHEMA.value,
         )
 
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}()"
+
     def clean_graph(self) -> None:
         """
         Method that cleans graph

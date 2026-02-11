@@ -9,27 +9,19 @@ import torch
 from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_qdrant import QdrantVectorStore, RetrievalMode
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from qdrant_client import QdrantClient
+from qdrant_client.models import SparseVector
 from tqdm import tqdm
 
 # isort: off
-from qdrant_client.models import (
-    Distance,
-    SparseVector,
-    SparseVectorParams,
-    VectorParams,
-)
-
 from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
-    EMBEDDINGS_SIZE,
 )
 from src.embeddings.models import EmbedderConfig
+from src.helpers.create_vector_db import VectorDatabase
 from src.tools.tools import AgentTools
 
 
@@ -54,6 +46,15 @@ class EmbedSparse(FastEmbedSparse):
             self._device = device
 
         super().__init__(model_name=self._model_name, device=self._device)
+
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}({self._device=!r})"
 
     def embed_documents(self, texts: list[str]) -> list[SparseVector]:
         """
@@ -92,9 +93,7 @@ class Embedder:  # pylint: disable=R0902
     Instance for all operations with embeddings via Qdrant
     """
 
-    _qdrant_path = PathsStorage.QDRANT_PATH.value
     _parent_store_path = PathsStorage.PARENT_CHUNKS_PATH.value
-    _child_collection = PathsStorage.CHILD_COLLECTION.value
     _dense_model_name = LLMsAndVectorizersStorage.DENSE_MODEL_NAME.value
     _sparse_model_name = LLMsAndVectorizersStorage.SPARSE_MODEL_NAME.value
 
@@ -117,12 +116,13 @@ class Embedder:  # pylint: disable=R0902
         else:
             self._device = device
 
-        self._parent_chunk_size = config.parent_chunk_size
-        self._child_chunk_size = config.child_chunk_size
-        self._parent_chunk_overlap = config.parent_chunk_overlap
-        self._child_chunk_overlap = config.child_chunk_overlap
+        self._config = config
+        self._parent_chunk_size = self._config.parent_chunk_size
+        self._child_chunk_size = self._config.child_chunk_size
+        self._parent_chunk_overlap = self._config.parent_chunk_overlap
+        self._child_chunk_overlap = self._config.child_chunk_overlap
+        self._recreate_collection = recreate_collection
 
-        self._qdrant_path.parent.mkdir(parents=True, exist_ok=True)
         self._parent_store_path.mkdir(parents=True, exist_ok=True)
 
         self._dense_embeddings = HuggingFaceEmbeddings(
@@ -132,8 +132,21 @@ class Embedder:  # pylint: disable=R0902
 
         self._sparse_embeddings = EmbedSparse(device=self._device)
 
-        self._client = QdrantClient(path=str(self._qdrant_path))
-        self._init_child_storage(recreate_collection)
+        self._vector_db = VectorDatabase(
+            dense_embeddings=self._dense_embeddings,
+            sparse_embeddings=self._sparse_embeddings,
+            recreate_collection=self._recreate_collection,
+        )
+
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}({self._config=!r}, {self.
+        _device=!r}, {self._recreate_collection=!r})"
 
     def add_documents(
         self, texts: list[str], document_ids: Optional[list[str]] = None
@@ -183,22 +196,9 @@ class Embedder:  # pylint: disable=R0902
                         )
                     )
 
-        self._child_vector_store.add_documents(docs)
+        self._vector_db.add_documents(docs)
 
         self._save_parent_chunks(chunk_storage)
-
-    def similarity_search(self, query: str, k: int = 5) -> list[Document]:
-        """
-        Performs hybrid similarity search on a given query.
-
-        Args:
-            query (str): Input query
-            k (int): K nearest neighbours
-
-        Returns:
-            list[Document]: Massive of found documents
-        """
-        return self._child_vector_store.similarity_search(query=query, k=k)
 
     def similarity_search_with_score(  # For future maybe
         self, query: str, k: int = 5
@@ -213,27 +213,7 @@ class Embedder:  # pylint: disable=R0902
         Returns:
             list[tuple[Document, float]]: Massive of found documents with scores
         """
-        return self._child_vector_store.similarity_search_with_score(query=query, k=k)
-
-    def similarity_search_with_threshold(
-        self, query: str, k: int = 5, threshold: float = 0.6
-    ) -> list[Document]:
-        """
-        Performs hybrid similarity search with threshold filtering.
-
-        Args:
-            query (str): Input query
-            k (int): K nearest neighbours
-            threshold (float): Minimum similarity score
-
-        Returns:
-            list[Document]: Filtered documents
-        """
-        results_with_scores = self.similarity_search_with_score(query, k)
-        filtered_results = [
-            doc for doc, score in results_with_scores if score > threshold
-        ]
-        return filtered_results
+        return self._vector_db.similarity_search_with_score(query, k)
 
     def similarity_search_with_score_and_threshold(
         self, query: str, k: int = 4, threshold: float = 0.6
@@ -249,9 +229,9 @@ class Embedder:  # pylint: disable=R0902
         Returns:
             list[tuple[Document, float]]: Filtered documents with scores
         """
-        result = self.similarity_search_with_score(query, k)
-        filtered_results = [(doc, score) for doc, score in result if score > threshold]
-        return filtered_results
+        return self._vector_db.similarity_search_with_score_and_threshold(
+            query, k, threshold
+        )
 
     def get_tools(self) -> tuple[BaseTool, ...]:
         """
@@ -267,41 +247,7 @@ class Embedder:  # pylint: disable=R0902
         """
         Method to close client
         """
-        if hasattr(self, "_client") and self._client:
-            self._client.close()
-
-    def _init_child_storage(
-        self, recreate_collection: bool = False
-    ) -> QdrantVectorStore:
-        """
-        Initializes Qdrant vector storage for hybrid similarity search.
-
-        Args:
-            recreate_collection (bool): Flag to recreate collection
-
-        Returns:
-            QdrantVectorStore: Storage of embeddings
-        """
-
-        if recreate_collection and self._client.collection_exists(
-            self._child_collection
-        ):
-            self._client.delete_collection(self._child_collection)
-
-        if not self._client.collection_exists(self._child_collection):
-            self._client.create_collection(
-                collection_name=self._child_collection,
-                vectors_config=VectorParams(
-                    size=EMBEDDINGS_SIZE, distance=Distance.COSINE
-                ),
-                sparse_vectors_config={"sparse": SparseVectorParams()},
-            )
-            print(f"Created collection: {self._child_collection}")
-        else:
-            print(f"Collection {self._child_collection} already exists")
-
-        self._child_vector_store = self._init_vector_store()
-        return self._child_vector_store
+        self._vector_db.close()
 
     def _init_text_splitters(self) -> tuple[RecursiveCharacterTextSplitter, ...]:
         """
@@ -323,23 +269,6 @@ class Embedder:  # pylint: disable=R0902
         )
 
         return parent_splitter, child_splitter
-
-    def _init_vector_store(self) -> QdrantVectorStore:
-        """
-        Method that initializes vector store
-
-        Returns:
-            QdrantVectorStore: Vector store
-        """
-        vector_store = QdrantVectorStore(
-            client=self._client,
-            collection_name=self._child_collection,
-            embedding=self._dense_embeddings,
-            sparse_embedding=self._sparse_embeddings,
-            retrieval_mode=RetrievalMode.HYBRID,
-            sparse_vector_name="sparse",
-        )
-        return vector_store
 
     def _save_parent_chunks(self, chunks_storage: list[dict[str, object]]) -> None:
         """
@@ -364,39 +293,42 @@ if __name__ == "__main__":
     )
 
     embedder = Embedder(config=embedder_config, recreate_collection=True)
+    print(embedder)
 
-    embedder.add_documents(
-        texts=[
-            "# This is a sample text.",
-            "### Subsection.",
-            "The quick brown fox jumps over the lazy dog.",
-            "I believe I can fly",
-            "I love animals",
-            "My father loves my mother very much",
-            "I know that my friend John is very lazy",
-            "very bright yellow leafs and red blood",
-            "I love to eat yellow snow",
-            "He scores his first goal in professional league",
-            "He is one of the best football players of all time. He is real GOAT!",
-        ],
-        document_ids=[
-            "doc1",
-            "doc2",
-            "doc3",
-            "doc4",
-            "doc5",
-            "doc6",
-            "doc7",
-            "doc8",
-            "doc9",
-            "doc10",
-            "doc11",
-        ],  # Optional
-    )
+    # embedder.add_documents(
+    #     texts=[
+    #         "# This is a sample text.",
+    #         "### Subsection.",
+    #         "The quick brown fox jumps over the lazy dog.",
+    #         "I believe I can fly",
+    #         "I love animals",
+    #         "My father loves my mother very much",
+    #         "I know that my friend John is very lazy",
+    #         "very bright yellow leafs and red blood",
+    #         "I love to eat yellow snow",
+    #         "He scores his first goal in professional league",
+    #         "He is one of the best football players of all time. He is real GOAT!",
+    #     ],
+    #     document_ids=[
+    #         "doc1",
+    #         "doc2",
+    #         "doc3",
+    #         "doc4",
+    #         "doc5",
+    #         "doc6",
+    #         "doc7",
+    #         "doc8",
+    #         "doc9",
+    #         "doc10",
+    #         "doc11",
+    #     ],  # Optional
+    # )
 
-    results = embedder.similarity_search("football", k=2)
-    for doc in results:
-        print(f"Content: {doc.page_content}")
-        print(f"Metadata: {doc.metadata}")
-        print("-" * 50)
-    embedder.close()
+    # results = embedder.similarity_search_with_score_and_threshold(
+    #     "autumn", k=2, threshold=0.2
+    # )
+    # for doc, score in results:
+    #     print(f"Content: {doc.page_content}")
+    #     print(f"Score: {score}")
+    #     print("-" * 50)
+    # embedder.close()
