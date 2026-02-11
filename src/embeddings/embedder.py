@@ -7,11 +7,13 @@ from typing import Optional
 
 import torch
 from langchain_core.documents import Document
+from langchain_core.tools import BaseTool
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore, RetrievalMode
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
+from tqdm import tqdm
 
 # isort: off
 from qdrant_client.models import (
@@ -25,6 +27,7 @@ from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
+    EMBEDDINGS_SIZE,
 )
 from src.embeddings.models import EmbedderConfig
 from src.tools.tools import AgentTools
@@ -44,14 +47,13 @@ class EmbedSparse(FastEmbedSparse):
         Args:
             device (str): Device that operates embeddings processing
         """
-        super().__init__()
         self._device: str
         if device is None:
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self._device = device
 
-        self.model = FastEmbedSparse(model_name=self._model_name, device=self._device)
+        super().__init__(model_name=self._model_name, device=self._device)
 
     def embed_documents(self, texts: list[str]) -> list[SparseVector]:
         """
@@ -63,7 +65,7 @@ class EmbedSparse(FastEmbedSparse):
         Returns:
             list[SparseVector]: Massive of sparse vectors
         """
-        embeddings = list(self.model.embed_documents(texts))
+        embeddings = super().embed_documents(texts)
         result = []
         for embedding in embeddings:
             indices = embedding.indices
@@ -71,7 +73,7 @@ class EmbedSparse(FastEmbedSparse):
             result.append(SparseVector(indices=indices, values=values))
         return result
 
-    def embed_query(self, text: str) -> list[SparseVector]:
+    def embed_query(self, text: str) -> SparseVector:
         """
         Method to embed input query
 
@@ -79,9 +81,9 @@ class EmbedSparse(FastEmbedSparse):
             text (str): Input query
 
         Returns:
-            list[SparseVector]: Embedded query
+            SparseVector: Embedded query
         """
-        embedding = self.model.embed_documents([text])[0]
+        embedding = super().embed_documents([text])[0]
         return SparseVector(indices=embedding.indices, values=embedding.values)
 
 
@@ -101,7 +103,7 @@ class Embedder:  # pylint: disable=R0902
         config: EmbedderConfig,
         device: Optional[str] = None,
         recreate_collection: bool = True,
-    ) -> None:
+    ):
         """
         Embedding model wrapper for Qdrant.
 
@@ -131,7 +133,7 @@ class Embedder:  # pylint: disable=R0902
         self._sparse_embeddings = EmbedSparse(device=self._device)
 
         self._client = QdrantClient(path=str(self._qdrant_path))
-        self._child_vector_store = self._init_child_storage(recreate_collection)
+        self._init_child_storage(recreate_collection)
 
     def add_documents(
         self, texts: list[str], document_ids: Optional[list[str]] = None
@@ -151,8 +153,10 @@ class Embedder:  # pylint: disable=R0902
         docs = []
         chunk_storage = []
 
-        for doc_idx, (document_id, document_chunks) in enumerate(
-            zip(document_ids, [parent_splitter.split_text(text) for text in texts])
+        for doc_idx, (document_id, document_chunks) in tqdm(
+            enumerate(
+                zip(document_ids, [parent_splitter.split_text(text) for text in texts])
+            )
         ):
             for parent_id, parent_chunk in enumerate(document_chunks):
 
@@ -249,12 +253,22 @@ class Embedder:  # pylint: disable=R0902
         filtered_results = [(doc, score) for doc, score in result if score > threshold]
         return filtered_results
 
-    def get_tools(self) -> None:
+    def get_tools(self) -> tuple[BaseTool, ...]:
         """
         Method that gets tools for agent by using self
+
+        Returns:
+            tuple[BaseTool, ...]: Tools
         """
         tools = AgentTools(self)
         return tools.create_tools()
+
+    def close(self) -> None:
+        """
+        Method to close client
+        """
+        if hasattr(self, "_client") and self._client:
+            self._client.close()
 
     def _init_child_storage(
         self, recreate_collection: bool = False
@@ -268,7 +282,6 @@ class Embedder:  # pylint: disable=R0902
         Returns:
             QdrantVectorStore: Storage of embeddings
         """
-        embeddings_dimension = len(self._dense_embeddings.embed_query("test"))
 
         if recreate_collection and self._client.collection_exists(
             self._child_collection
@@ -279,7 +292,7 @@ class Embedder:  # pylint: disable=R0902
             self._client.create_collection(
                 collection_name=self._child_collection,
                 vectors_config=VectorParams(
-                    size=embeddings_dimension, distance=Distance.COSINE
+                    size=EMBEDDINGS_SIZE, distance=Distance.COSINE
                 ),
                 sparse_vectors_config={"sparse": SparseVectorParams()},
             )
@@ -386,3 +399,4 @@ if __name__ == "__main__":
         print(f"Content: {doc.page_content}")
         print(f"Metadata: {doc.metadata}")
         print("-" * 50)
+    embedder.close()

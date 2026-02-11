@@ -106,3 +106,5 @@ Question: {question}
 
 Answer based on the context above:
 """
+
+EMBEDDINGS_SIZE = 1024
