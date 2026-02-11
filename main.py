@@ -28,7 +28,7 @@ Main module of the program
 #         ],
 #     )
 #     tools = embedder.get_tools()
-#     query_text = "What is SLI?"
+#     query_text = "Did Noam Chomsky support the ideas of behaviorism or descriptivism?"
 #     results = embedder.similarity_search_with_score(query_text, 4)
 #     context_text = "\n\n---\n\n".join([doc.page_content for doc, _ in results])
 #     prompt_template = ChatPromptTemplate.from_template(PROMPT_TEMPLATE)
@@ -37,8 +37,8 @@ Main module of the program
 #     model = ChatOllama(model="mistral")
 #     model_with_tools = model.bind_tools(tools)
 
-#     response_text = model.invoke(prompt)
-#     sources = [doc.metadata.get("source", None) for doc, _ in results]
+#     response_text = model_with_tools.invoke(prompt)
+#     sources = [doc.metadata.get("chunk_id", None) for doc, _ in results]
 
 #     formatted_response = f"Response: {response_text.text}, Sources: {sources}"
 #     print(formatted_response)

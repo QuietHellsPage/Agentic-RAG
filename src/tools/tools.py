@@ -31,6 +31,9 @@ class AgentTools:
     def create_tools(self) -> tuple[BaseTool, ...]:
         """
         Method that creates all tools for agent
+
+        Returns:
+            tuple[BaseTool]: Tools for agent
         """
 
         @tool

@@ -39,6 +39,6 @@ class Graph:
         Method that adds data to graph
 
         Args:
-            data (str): Data to be added to graph
+            data (list[GraphDocument]): Data to be added to graph
         """
         self._graph.add_graph_documents(data, include_source=True)

@@ -12,9 +12,15 @@ from langchain_qdrant import QdrantVectorStore, RetrievalMode
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from qdrant_client import QdrantClient
-from qdrant_client import models as qmodels
 
 # isort: off
+from qdrant_client.models import (
+    Distance,
+    SparseVector,
+    SparseVectorParams,
+    VectorParams,
+)
+
 from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
@@ -41,14 +47,13 @@ class EmbedSparse(FastEmbedSparse):
         super().__init__()
         self._device: str
         if device is None:
-
             self._device = "cuda" if torch.cuda.is_available() else "cpu"
         else:
             self._device = device
 
         self.model = FastEmbedSparse(model_name=self._model_name, device=self._device)
 
-    def embed_documents(self, texts: list[str]) -> list[qmodels.SparseVector]:
+    def embed_documents(self, texts: list[str]) -> list[SparseVector]:
         """
         Method to embed documents
 
@@ -56,17 +61,17 @@ class EmbedSparse(FastEmbedSparse):
             texts (list[str]): Texts that have to be processed in embeddings
 
         Returns:
-            list[qmodels.SparseVector]: Massive of sparse vectors
+            list[SparseVector]: Massive of sparse vectors
         """
         embeddings = list(self.model.embed_documents(texts))
         result = []
         for embedding in embeddings:
             indices = embedding.indices
             values = embedding.values
-            result.append(qmodels.SparseVector(indices=indices, values=values))
+            result.append(SparseVector(indices=indices, values=values))
         return result
 
-    def embed_query(self, text: str) -> list[qmodels.SparseVector]:
+    def embed_query(self, text: str) -> list[SparseVector]:
         """
         Method to embed input query
 
@@ -74,10 +79,10 @@ class EmbedSparse(FastEmbedSparse):
             text (str): Input query
 
         Returns:
-            list[qmodels.SparseVector]: Embedded query
+            list[SparseVector]: Embedded query
         """
         embedding = self.model.embed_documents([text])[0]
-        return qmodels.SparseVector(indices=embedding.indices, values=embedding.values)
+        return SparseVector(indices=embedding.indices, values=embedding.values)
 
 
 class Embedder:  # pylint: disable=R0902
@@ -141,16 +146,7 @@ class Embedder:  # pylint: disable=R0902
         if document_ids is None:
             document_ids = [str(i) for i in range(len(texts))]
 
-        parent_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self._parent_chunk_size,
-            chunk_overlap=self._parent_chunk_overlap,
-            separators=TEXT_SPLITTER_SEPARATORS,
-        )
-        child_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self._child_chunk_size,
-            chunk_overlap=self._child_chunk_overlap,
-            separators=TEXT_SPLITTER_SEPARATORS,
-        )
+        parent_splitter, child_splitter = self._init_text_splitters()
 
         docs = []
         chunk_storage = []
@@ -185,52 +181,7 @@ class Embedder:  # pylint: disable=R0902
 
         self._child_vector_store.add_documents(docs)
 
-        if (parent_store_file := PathsStorage.PARENT_COLLECTION.value).exists():
-            parent_store_file.unlink()
-
-        with open(parent_store_file, "w", encoding="utf-8") as file:
-            json.dump(chunk_storage, file, indent=4, ensure_ascii=False)
-
-    def _init_child_storage(
-        self, recreate_collection: bool = False
-    ) -> QdrantVectorStore:
-        """
-        Initializes Qdrant vector storage for hybrid similarity search.
-
-        Args:
-            recreate_collection (bool): Flag to recreate collection
-
-        Returns:
-            QdrantVectorStore: Storage of embeddings
-        """
-        embeddings_dimension = len(self._dense_embeddings.embed_query("test"))
-
-        if recreate_collection and self._client.collection_exists(
-            self._child_collection
-        ):
-            self._client.delete_collection(self._child_collection)
-
-        if not self._client.collection_exists(self._child_collection):
-            self._client.create_collection(
-                collection_name=self._child_collection,
-                vectors_config=qmodels.VectorParams(
-                    size=embeddings_dimension, distance=qmodels.Distance.COSINE
-                ),
-                sparse_vectors_config={"sparse": qmodels.SparseVectorParams()},
-            )
-            print(f"Created collection: {self._child_collection}")
-        else:
-            print(f"Collection {self._child_collection} already exists")
-
-        vector_store = QdrantVectorStore(
-            client=self._client,
-            collection_name=self._child_collection,
-            embedding=self._dense_embeddings,
-            sparse_embedding=self._sparse_embeddings,
-            retrieval_mode=RetrievalMode.HYBRID,
-            sparse_vector_name="sparse",
-        )
-        return vector_store
+        self._save_parent_chunks(chunk_storage)
 
     def similarity_search(self, query: str, k: int = 5) -> list[Document]:
         """
@@ -304,6 +255,91 @@ class Embedder:  # pylint: disable=R0902
         """
         tools = AgentTools(self)
         return tools.create_tools()
+
+    def _init_child_storage(
+        self, recreate_collection: bool = False
+    ) -> QdrantVectorStore:
+        """
+        Initializes Qdrant vector storage for hybrid similarity search.
+
+        Args:
+            recreate_collection (bool): Flag to recreate collection
+
+        Returns:
+            QdrantVectorStore: Storage of embeddings
+        """
+        embeddings_dimension = len(self._dense_embeddings.embed_query("test"))
+
+        if recreate_collection and self._client.collection_exists(
+            self._child_collection
+        ):
+            self._client.delete_collection(self._child_collection)
+
+        if not self._client.collection_exists(self._child_collection):
+            self._client.create_collection(
+                collection_name=self._child_collection,
+                vectors_config=VectorParams(
+                    size=embeddings_dimension, distance=Distance.COSINE
+                ),
+                sparse_vectors_config={"sparse": SparseVectorParams()},
+            )
+            print(f"Created collection: {self._child_collection}")
+        else:
+            print(f"Collection {self._child_collection} already exists")
+
+        self._child_vector_store = self._init_vector_store()
+        return self._child_vector_store
+
+    def _init_text_splitters(self) -> tuple[RecursiveCharacterTextSplitter, ...]:
+        """
+        Method that initializes recursive text splitters
+
+        Returns:
+            tuple[RecursiveCharacterTextSplitter]: Text splitters
+        """
+        child_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self._child_chunk_size,
+            chunk_overlap=self._child_chunk_overlap,
+            separators=TEXT_SPLITTER_SEPARATORS,
+        )
+
+        parent_splitter = RecursiveCharacterTextSplitter(
+            chunk_size=self._parent_chunk_size,
+            chunk_overlap=self._parent_chunk_overlap,
+            separators=TEXT_SPLITTER_SEPARATORS,
+        )
+
+        return parent_splitter, child_splitter
+
+    def _init_vector_store(self) -> QdrantVectorStore:
+        """
+        Method that initializes vector store
+
+        Returns:
+            QdrantVectorStore: Vector store
+        """
+        vector_store = QdrantVectorStore(
+            client=self._client,
+            collection_name=self._child_collection,
+            embedding=self._dense_embeddings,
+            sparse_embedding=self._sparse_embeddings,
+            retrieval_mode=RetrievalMode.HYBRID,
+            sparse_vector_name="sparse",
+        )
+        return vector_store
+
+    def _save_parent_chunks(self, chunks_storage: list[dict[str, object]]) -> None:
+        """
+        Method that saves parent chunks to file
+
+        Args:
+            chunks_storage (list[dict[str, object]]): Chunks
+        """
+        if (parent_store_file := PathsStorage.PARENT_COLLECTION.value).exists():
+            parent_store_file.unlink()
+
+        with open(parent_store_file, "w", encoding="utf-8") as file:
+            json.dump(chunks_storage, file, indent=4, ensure_ascii=False)
 
 
 if __name__ == "__main__":
