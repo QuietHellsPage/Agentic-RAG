@@ -28,9 +28,21 @@ class AgentTools:
         self.embedder = embedder
         self.parent_store_path = embedder._parent_store_path
 
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}({self.embedder=!r})"
+
     def create_tools(self) -> tuple[BaseTool, ...]:
         """
         Method that creates all tools for agent
+
+        Returns:
+            tuple[BaseTool]: Tools for agent
         """
 
         @tool

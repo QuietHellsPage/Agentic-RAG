@@ -24,6 +24,15 @@ class Graph:
             refresh_schema=GraphInitializerStorage.REFRESH_SCHEMA.value,
         )
 
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}()"
+
     def clean_graph(self) -> None:
         """
         Method that cleans graph
@@ -39,6 +48,6 @@ class Graph:
         Method that adds data to graph
 
         Args:
-            data (str): Data to be added to graph
+            data (list[GraphDocument]): Data to be added to graph
         """
         self._graph.add_graph_documents(data, include_source=True)

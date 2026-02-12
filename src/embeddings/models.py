@@ -18,9 +18,12 @@ class EmbedderConfig(BaseModel):
     child_chunk_overlap: Annotated[int, Field(default=200, gt=0)]
 
     @model_validator(mode="after")
-    def validate_fields(self):
+    def validate_fields(self) -> "EmbedderConfig":
         """
         Validate fields of model
+
+        Returns:
+            EmbedderConfig: Self
         """
         if self.child_chunk_overlap >= self.child_chunk_size:
             raise ValueError(
