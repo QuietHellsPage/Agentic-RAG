@@ -3,6 +3,7 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import json
+import os
 from typing import Optional
 
 import torch
@@ -19,6 +20,7 @@ from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
+    EMBEDDINGS_DEVICE_ENV,
 )
 from src.embeddings.models import EmbedderConfig
 from src.helpers.create_vector_db import VectorDatabase
@@ -32,16 +34,18 @@ class EmbedSparse(FastEmbedSparse):
 
     _model_name = LLMsAndVectorizersStorage.SPARSE_MODEL_NAME.value
 
-    def __init__(self, device: str) -> None:
+    def __init__(self, device: Optional[str] = None) -> None:
         """
         Initialize an instance of class
 
         Args:
-            device (str): Device that operates embeddings processing
+            device (Optional[str]): Device that operates embeddings processing
         """
-        self._device: str
         if device is None:
-            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            if not (env_device := os.getenv(EMBEDDINGS_DEVICE_ENV)):
+                self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            else:
+                self._device = env_device
         else:
             self._device = device
 
@@ -112,7 +116,10 @@ class Embedder:  # pylint: disable=R0902
             recreate_collection (bool): Flag to recreate collection
         """
         if device is None:
-            self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            if not (env_device := os.getenv(EMBEDDINGS_DEVICE_ENV)):
+                self._device = "cuda" if torch.cuda.is_available() else "cpu"
+            else:
+                self._device = env_device
         else:
             self._device = device
 
