@@ -10,6 +10,8 @@ from langchain_ollama import ChatOllama
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data"
 
+EMBEDDINGS_DEVICE_ENV = "EMBEDDINGS_DEVICE"
+
 TEXT_SPLITTER_SEPARATORS = [
     "\n#",
     "\n##",
