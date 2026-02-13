@@ -15,10 +15,7 @@ from qdrant_client.models import (
     VectorParams,
 )
 
-from src.config.constants import (
-    PathsStorage,
-    EMBEDDINGS_SIZE,
-)
+from src.config.constants import PathsStorage, EMBEDDINGS_SIZE, LOGGER as logger
 
 
 class VectorDatabase:
@@ -129,9 +126,9 @@ class VectorDatabase:
                 ),
                 sparse_vectors_config={"sparse": SparseVectorParams()},
             )
-            print(f"Created collection: {self._child_collection}")
+            logger.info("Created collection: %s", self._child_collection)
         else:
-            print(f"Collection {self._child_collection} already exists")
+            logger.info("Collection %s already exists", self._child_collection)
 
         self._vector_store = self._init_vector_store()
 

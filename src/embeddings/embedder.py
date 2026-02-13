@@ -21,6 +21,7 @@ from src.config.constants import (
     LLMsAndVectorizersStorage,
     PathsStorage,
     EMBEDDINGS_DEVICE_ENV,
+    LOGGER as logger,
 )
 from src.embeddings.models import EmbedderConfig
 from src.helpers.create_vector_db import VectorDatabase
@@ -179,7 +180,7 @@ class Embedder:  # pylint: disable=R0902
             )
         ):
             for parent_id, parent_chunk in enumerate(document_chunks):
-
+                logger.info("Processing parent chunk №%s", parent_id)
                 chunk_storage.append(
                     {
                         "document_id": document_id,
@@ -191,6 +192,7 @@ class Embedder:  # pylint: disable=R0902
                 for child_id, child_chunk in enumerate(
                     child_splitter.split_text(parent_chunk)
                 ):
+                    logger.info("Processing child chunk №%s", child_id)
                     docs.append(
                         Document(
                             page_content=child_chunk,
@@ -205,6 +207,7 @@ class Embedder:  # pylint: disable=R0902
 
         self._vector_db.add_documents(docs)
 
+        logger.info("Saving parent chunks")
         self._save_parent_chunks(chunk_storage)
 
     def similarity_search_with_score(  # For future maybe
