@@ -2,10 +2,17 @@
 Constants for processing workflow
 """
 
+import logging
 from enum import Enum, StrEnum
 from pathlib import Path
 
 from langchain_ollama import ChatOllama
+
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
+)
+LOGGER = logging.getLogger(name=__name__)
+
 
 PROJECT_ROOT = Path(__file__).parent.parent.parent
 DATA_PATH = PROJECT_ROOT / "data"
