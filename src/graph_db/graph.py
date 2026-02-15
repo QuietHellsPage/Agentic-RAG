@@ -13,11 +13,14 @@ class Graph:
     Wrapper for Neo4jGraph
     """
 
-    def __init__(self) -> None:
+    def __init__(self, graph_instance: Neo4jGraph) -> None:
         """
         Initialize an instance of class
+
+        Args:
+            graph_instance (Neo4jGraph): Graph db
         """
-        self._graph = Neo4jGraph(
+        self._graph = graph_instance(
             url=GraphInitializerStorage.URL.value,
             username=GraphInitializerStorage.USERNAME.value,
             password=GraphInitializerStorage.PASSWORD.value,

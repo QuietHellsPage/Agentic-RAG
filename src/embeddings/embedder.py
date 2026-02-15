@@ -5,7 +5,7 @@ Module to operate processing of raw text and saving it to vector db
 import json
 import os
 from typing import Optional
-
+from qdrant_client import QdrantClient
 import torch
 from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
@@ -105,6 +105,9 @@ class Embedder:  # pylint: disable=R0902
     def __init__(
         self,
         config: EmbedderConfig,
+        embeddings_model: HuggingFaceEmbeddings,
+        sparse_model: EmbedSparse,
+        vector_db: VectorDatabase,
         device: Optional[str] = None,
         recreate_collection: bool = True,
     ):
@@ -113,6 +116,9 @@ class Embedder:  # pylint: disable=R0902
 
         Args:
             config (EmbedderConfig): Configuration for embedder
+            embeddings_model (HuggingFaceEmbeddings): Model embedder
+            sparse_model (EmbedSparse): Sparse model
+            vector_db (VectorDatabase): Vector database
             device (Optional[str]): Device that operates embeddings processing
             recreate_collection (bool): Flag to recreate collection
         """
@@ -133,16 +139,17 @@ class Embedder:  # pylint: disable=R0902
 
         self._parent_store_path.mkdir(parents=True, exist_ok=True)
 
-        self._dense_embeddings = HuggingFaceEmbeddings(
+        self._dense_embeddings = embeddings_model(
             model_name=self._dense_model_name,
             model_kwargs={"device": self._device},
         )
 
-        self._sparse_embeddings = EmbedSparse(device=self._device)
+        self._sparse_embeddings = sparse_model(device=self._device)
 
-        self._vector_db = VectorDatabase(
+        self._vector_db = vector_db(
             dense_embeddings=self._dense_embeddings,
             sparse_embeddings=self._sparse_embeddings,
+            client=QdrantClient,
             recreate_collection=self._recreate_collection,
         )
 
@@ -302,43 +309,49 @@ if __name__ == "__main__":
         child_chunk_overlap=128,
     )
 
-    embedder = Embedder(config=embedder_config, recreate_collection=True)
+    embedder = Embedder(
+        config=embedder_config,
+        embeddings_model=HuggingFaceEmbeddings,
+        sparse_model=EmbedSparse,
+        vector_db=VectorDatabase,
+        recreate_collection=True,
+    )
     print(embedder)
 
-    # embedder.add_documents(
-    #     texts=[
-    #         "# This is a sample text.",
-    #         "### Subsection.",
-    #         "The quick brown fox jumps over the lazy dog.",
-    #         "I believe I can fly",
-    #         "I love animals",
-    #         "My father loves my mother very much",
-    #         "I know that my friend John is very lazy",
-    #         "very bright yellow leafs and red blood",
-    #         "I love to eat yellow snow",
-    #         "He scores his first goal in professional league",
-    #         "He is one of the best football players of all time. He is real GOAT!",
-    #     ],
-    #     document_ids=[
-    #         "doc1",
-    #         "doc2",
-    #         "doc3",
-    #         "doc4",
-    #         "doc5",
-    #         "doc6",
-    #         "doc7",
-    #         "doc8",
-    #         "doc9",
-    #         "doc10",
-    #         "doc11",
-    #     ],  # Optional
-    # )
+    embedder.add_documents(
+        texts=[
+            "# This is a sample text.",
+            "### Subsection.",
+            "The quick brown fox jumps over the lazy dog.",
+            "I believe I can fly",
+            "I love animals",
+            "My father loves my mother very much",
+            "I know that my friend John is very lazy",
+            "very bright yellow leafs and red blood",
+            "I love to eat yellow snow",
+            "He scores his first goal in professional league",
+            "He is one of the best football players of all time. He is real GOAT!",
+        ],
+        document_ids=[
+            "doc1",
+            "doc2",
+            "doc3",
+            "doc4",
+            "doc5",
+            "doc6",
+            "doc7",
+            "doc8",
+            "doc9",
+            "doc10",
+            "doc11",
+        ],  # Optional
+    )
 
-    # results = embedder.similarity_search_with_score_and_threshold(
-    #     "autumn", k=2, threshold=0.2
-    # )
-    # for doc, score in results:
-    #     print(f"Content: {doc.page_content}")
-    #     print(f"Score: {score}")
-    #     print("-" * 50)
-    # embedder.close()
+    results = embedder.similarity_search_with_score_and_threshold(
+        "autumn", k=2, threshold=0.2
+    )
+    for doc, score in results:
+        print(f"Content: {doc.page_content}")
+        print(f"Score: {score}")
+        print("-" * 50)
+    embedder.close()
