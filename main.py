@@ -4,11 +4,11 @@ Main module of the program
 
 # from langchain_core.prompts import ChatPromptTemplate
 # from langchain_ollama import ChatOllama
-
+# from langchain_huggingface import HuggingFaceEmbeddings
 # from src.config.constants import PROMPT_TEMPLATE
-# from src.embeddings.embedder import Embedder
+# from src.embeddings.embedder import Embedder, EmbedSparse
 # from src.embeddings.models import EmbedderConfig
-
+# from src.helpers.create_vector_db import VectorDatabase
 # if __name__ == "__main__":
 #     embedder_config = EmbedderConfig(
 #         parent_chunk_size=2048,
@@ -17,7 +17,13 @@ Main module of the program
 #         child_chunk_overlap=256,
 #     )
 
-#     embedder = Embedder(config=embedder_config, recreate_collection=False)
+#     embedder = Embedder(
+#         config=embedder_config,
+#         embeddings_model=HuggingFaceEmbeddings,
+#         sparse_model=EmbedSparse,
+#         vector_db=VectorDatabase,
+#         recreate_collection=True,
+#     )
 
 #     with open("pinker.md", "r", encoding="utf-8") as file:
 #         data = file.read()
