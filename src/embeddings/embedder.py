@@ -5,13 +5,14 @@ Module to operate processing of raw text and saving it to vector db
 import json
 import os
 from typing import Optional
-from qdrant_client import QdrantClient
+
 import torch
 from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from qdrant_client import QdrantClient
 from qdrant_client.models import SparseVector
 from tqdm import tqdm
 
@@ -105,9 +106,9 @@ class Embedder:  # pylint: disable=R0902
     def __init__(
         self,
         config: EmbedderConfig,
-        embeddings_model: HuggingFaceEmbeddings,
-        sparse_model: EmbedSparse,
-        vector_db: VectorDatabase,
+        embeddings_model: type[HuggingFaceEmbeddings],
+        sparse_model: type[EmbedSparse],
+        vector_db: type[VectorDatabase],
         device: Optional[str] = None,
         recreate_collection: bool = True,
     ):
@@ -116,9 +117,9 @@ class Embedder:  # pylint: disable=R0902
 
         Args:
             config (EmbedderConfig): Configuration for embedder
-            embeddings_model (HuggingFaceEmbeddings): Model embedder
-            sparse_model (EmbedSparse): Sparse model
-            vector_db (VectorDatabase): Vector database
+            embeddings_model (type[HuggingFaceEmbeddings]): Model embedder
+            sparse_model (type[EmbedSparse]): Sparse model
+            vector_db (type[VectorDatabase]): Vector database
             device (Optional[str]): Device that operates embeddings processing
             recreate_collection (bool): Flag to recreate collection
         """
