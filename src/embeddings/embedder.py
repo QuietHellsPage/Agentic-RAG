@@ -94,7 +94,7 @@ class EmbedSparse(FastEmbedSparse):
         return SparseVector(indices=embedding.indices, values=embedding.values)
 
 
-class Embedder:  # pylint: disable=R0902
+class Embedder:
     """
     Instance for all operations with embeddings via Qdrant
     """
@@ -256,7 +256,7 @@ class Embedder:  # pylint: disable=R0902
         Method that gets tools for agent by using self
 
         Returns:
-            tuple[BaseTool, ...]: Tools
+            tuple[BaseTool]: Tools
         """
         tools = AgentTools(self)
         return tools.create_tools()
@@ -319,40 +319,40 @@ if __name__ == "__main__":
     )
     print(embedder)
 
-    embedder.add_documents(
-        texts=[
-            "# This is a sample text.",
-            "### Subsection.",
-            "The quick brown fox jumps over the lazy dog.",
-            "I believe I can fly",
-            "I love animals",
-            "My father loves my mother very much",
-            "I know that my friend John is very lazy",
-            "very bright yellow leafs and red blood",
-            "I love to eat yellow snow",
-            "He scores his first goal in professional league",
-            "He is one of the best football players of all time. He is real GOAT!",
-        ],
-        document_ids=[
-            "doc1",
-            "doc2",
-            "doc3",
-            "doc4",
-            "doc5",
-            "doc6",
-            "doc7",
-            "doc8",
-            "doc9",
-            "doc10",
-            "doc11",
-        ],  # Optional
-    )
+    # embedder.add_documents(
+    #     texts=[
+    #         "# This is a sample text.",
+    #         "### Subsection.",
+    #         "The quick brown fox jumps over the lazy dog.",
+    #         "I believe I can fly",
+    #         "I love animals",
+    #         "My father loves my mother very much",
+    #         "I know that my friend John is very lazy",
+    #         "very bright yellow leafs and red blood",
+    #         "I love to eat yellow snow",
+    #         "He scores his first goal in professional league",
+    #         "He is one of the best football players of all time. He is real GOAT!",
+    #     ],
+    #     document_ids=[
+    #         "doc1",
+    #         "doc2",
+    #         "doc3",
+    #         "doc4",
+    #         "doc5",
+    #         "doc6",
+    #         "doc7",
+    #         "doc8",
+    #         "doc9",
+    #         "doc10",
+    #         "doc11",
+    #     ],  # Optional
+    # )
 
-    results = embedder.similarity_search_with_score_and_threshold(
-        "autumn", k=2, threshold=0.2
-    )
-    for doc, score in results:
-        print(f"Content: {doc.page_content}")
-        print(f"Score: {score}")
-        print("-" * 50)
-    embedder.close()
+    # results = embedder.similarity_search_with_score_and_threshold(
+    #     "autumn", k=2, threshold=0.2
+    # )
+    # for doc, score in results:
+    #     print(f"Content: {doc.page_content}")
+    #     print(f"Score: {score}")
+    #     print("-" * 50)
+    # embedder.close()
