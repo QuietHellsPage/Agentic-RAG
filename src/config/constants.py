@@ -48,6 +48,7 @@ class PathsStorage(Enum):
     RAW_PDF_COLLECTION = DATA_PATH / "raw_texts" / "pdf_storage"
     RAW_MD_COLLECTION = DATA_PATH / "raw_texts" / "md_storage"
 
+
 class LLMsAndVectorizersStorage(Enum):
     """
     Storage for LLMs and vectorizers that are used
