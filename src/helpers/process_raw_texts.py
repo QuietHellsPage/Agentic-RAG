@@ -8,7 +8,7 @@ from pathlib import Path
 import pymupdf
 import pymupdf4llm
 
-from config.constants import PathsStorage
+from src.config.constants import PathsStorage
 
 
 class Processor:
@@ -56,7 +56,3 @@ class Processor:
                 encoding="utf-8", errors="ignore"
             )
             md_path.write_bytes(clean_md.encode(encoding="utf-8"))
-
-
-processor = Processor()
-processor.process_corpus()
