@@ -12,6 +12,7 @@ from langchain_core.tools import BaseTool
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from qdrant_client import QdrantClient
 from qdrant_client.models import SparseVector
 from tqdm import tqdm
 
@@ -93,7 +94,7 @@ class EmbedSparse(FastEmbedSparse):
         return SparseVector(indices=embedding.indices, values=embedding.values)
 
 
-class Embedder:  # pylint: disable=R0902
+class Embedder:
     """
     Instance for all operations with embeddings via Qdrant
     """
@@ -105,6 +106,9 @@ class Embedder:  # pylint: disable=R0902
     def __init__(
         self,
         config: EmbedderConfig,
+        embeddings_model: type[HuggingFaceEmbeddings],
+        sparse_model: type[EmbedSparse],
+        vector_db: type[VectorDatabase],
         device: Optional[str] = None,
         recreate_collection: bool = True,
     ):
@@ -113,6 +117,9 @@ class Embedder:  # pylint: disable=R0902
 
         Args:
             config (EmbedderConfig): Configuration for embedder
+            embeddings_model (type[HuggingFaceEmbeddings]): Model embedder
+            sparse_model (type[EmbedSparse]): Sparse model
+            vector_db (type[VectorDatabase]): Vector database
             device (Optional[str]): Device that operates embeddings processing
             recreate_collection (bool): Flag to recreate collection
         """
@@ -133,16 +140,17 @@ class Embedder:  # pylint: disable=R0902
 
         self._parent_store_path.mkdir(parents=True, exist_ok=True)
 
-        self._dense_embeddings = HuggingFaceEmbeddings(
+        self._dense_embeddings = embeddings_model(
             model_name=self._dense_model_name,
             model_kwargs={"device": self._device},
         )
 
-        self._sparse_embeddings = EmbedSparse(device=self._device)
+        self._sparse_embeddings = sparse_model(device=self._device)
 
-        self._vector_db = VectorDatabase(
+        self._vector_db = vector_db(
             dense_embeddings=self._dense_embeddings,
             sparse_embeddings=self._sparse_embeddings,
+            client=QdrantClient,
             recreate_collection=self._recreate_collection,
         )
 
@@ -248,7 +256,7 @@ class Embedder:  # pylint: disable=R0902
         Method that gets tools for agent by using self
 
         Returns:
-            tuple[BaseTool, ...]: Tools
+            tuple[BaseTool]: Tools
         """
         tools = AgentTools(self)
         return tools.create_tools()
@@ -302,7 +310,13 @@ if __name__ == "__main__":
         child_chunk_overlap=128,
     )
 
-    embedder = Embedder(config=embedder_config, recreate_collection=True)
+    embedder = Embedder(
+        config=embedder_config,
+        embeddings_model=HuggingFaceEmbeddings,
+        sparse_model=EmbedSparse,
+        vector_db=VectorDatabase,
+        recreate_collection=True,
+    )
     print(embedder)
 
     # embedder.add_documents(

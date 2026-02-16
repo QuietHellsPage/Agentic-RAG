@@ -4,6 +4,7 @@ Create graph db and process text
 
 from langchain_core.documents import Document
 from langchain_experimental.graph_transformers import LLMGraphTransformer
+from langchain_neo4j import Neo4jGraph
 
 # isort: off
 from src.config.constants import GraphAllowedConstants, LLMsAndVectorizersStorage
@@ -20,7 +21,7 @@ if __name__ == "__main__":
 
     documents = [Document(page_content=TEXT)]
 
-    graph = Graph()
+    graph = Graph(Neo4jGraph)
     graph.clean_graph()
 
     graph_transformer = LLMGraphTransformer(

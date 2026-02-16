@@ -30,6 +30,7 @@ class VectorDatabase:
         self,
         dense_embeddings: HuggingFaceEmbeddings,
         sparse_embeddings: FastEmbedSparse,
+        client: type[QdrantClient],
         recreate_collection: bool = True,
     ) -> None:
         """
@@ -38,12 +39,13 @@ class VectorDatabase:
         Args:
             dense_embeddings (HuggingFaceEmbeddings): Dense embeddings
             sparse_embeddings (FastEmbedSparse): Sparse embeddings
+            client (type[QdrantClient]): Client to operate work with vector database
             recreate_collection (bool): Flag to recreate collection
         """
         self._dense_embeddings = dense_embeddings
         self._sparse_embeddings = sparse_embeddings
         self._recreate_collection = recreate_collection
-        self._client = QdrantClient(path=str(self._qdrant_path))
+        self._client = client(path=str(self._qdrant_path))
         self._init_child_storage()
 
     def __repr__(self) -> str:

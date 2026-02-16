@@ -8,8 +8,13 @@ disable_error_code = [
     "return-value",
 ]
 
+[tool.pylint.main]
+max-args=7
+max-positional-arguments=7
+
 [tool.pylint.MASTER]
 max-locals = 20
 
 [tool.pylint.'design']
 min-public-methods = 1
+max-attributes=10
