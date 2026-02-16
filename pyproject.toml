@@ -8,6 +8,10 @@ disable_error_code = [
     "return-value",
 ]
 
+[[tool.mypy.overrides]]
+module = ["pymupdf.*", "pymupdf4llm.*"]
+follow_untyped_imports = true
+
 [tool.pylint.main]
 max-args=7
 max-positional-arguments=7

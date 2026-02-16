@@ -45,6 +45,8 @@ class PathsStorage(Enum):
     PARENT_CHUNKS_PATH = DATA_PATH / "chunks"
     CHILD_COLLECTION = "document_child_chunks"
     PARENT_COLLECTION = PARENT_CHUNKS_PATH / "parent_chunks_storage.json"
+    RAW_PDF_COLLECTION = DATA_PATH / "raw_texts" / "pdf_storage"
+    RAW_MD_COLLECTION = DATA_PATH / "raw_texts" / "md_storage"
 
 
 class LLMsAndVectorizersStorage(Enum):
