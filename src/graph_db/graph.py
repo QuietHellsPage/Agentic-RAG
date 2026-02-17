@@ -34,7 +34,7 @@ class Graph:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}()"
+        return f"{self.__class__.__name__!r}(self._graph={self._graph.__class__.__name__!r})"
 
     def clean_graph(self) -> None:
         """

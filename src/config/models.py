@@ -35,3 +35,13 @@ class EmbedderConfig(BaseModel):
                 "Parent chunk overlap can not be bigger or the same as parent chunks"
             )
         return self
+
+
+class ParentChunk(BaseModel):
+    """
+    Parent chunk model
+    """
+
+    document_id: Annotated[str, Field(min_length=1)]
+    parent_id: Annotated[int, Field(ge=0)]
+    parent_text: Annotated[str, Field(min_length=1)]
