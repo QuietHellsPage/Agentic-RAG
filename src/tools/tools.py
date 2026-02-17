@@ -35,7 +35,7 @@ class AgentTools:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}({self.embedder=!r})"
+        return f"{self.__class__.__name__!r}({self.embedder=!r}, {self.parent_store_path=!r})"
 
     def create_tools(self) -> tuple[BaseTool, ...]:
         """

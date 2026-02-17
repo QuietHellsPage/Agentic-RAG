@@ -29,6 +29,15 @@ class Processor:
         """
         self.overwrite = overwrite
 
+    def __repr__(self) -> str:
+        """
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}({self.overwrite=!r})"
+
     def process_corpus(self) -> None:
         """
         Method that processes converting whole corpus of PDFs into .MD files

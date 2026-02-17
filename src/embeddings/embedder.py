@@ -24,7 +24,7 @@ from src.config.constants import (
     EMBEDDINGS_DEVICE_ENV,
     LOGGER as logger,
 )
-from src.embeddings.models import EmbedderConfig
+from src.config.models import EmbedderConfig, ParentChunk
 from src.helpers.create_vector_db import VectorDatabase
 from src.tools.tools import AgentTools
 
@@ -190,11 +190,11 @@ class Embedder:
             for parent_id, parent_chunk in enumerate(document_chunks):
                 logger.info("Processing parent chunk №%s", parent_id)
                 chunk_storage.append(
-                    {
-                        "document_id": document_id,
-                        "parent_id": parent_id,
-                        "parent_text": parent_chunk,
-                    }
+                    ParentChunk(
+                        document_id=document_id,
+                        parent_id=parent_id,
+                        parent_text=parent_chunk,
+                    )
                 )
 
                 for child_id, child_chunk in enumerate(
@@ -288,18 +288,20 @@ class Embedder:
 
         return parent_splitter, child_splitter
 
-    def _save_parent_chunks(self, chunks_storage: list[dict[str, object]]) -> None:
+    def _save_parent_chunks(self, chunks_storage: list[ParentChunk]) -> None:
         """
         Method that saves parent chunks to file
 
         Args:
-            chunks_storage (list[dict[str, object]]): Chunks
+            chunks_storage (list[ParentChunk]): Chunks
         """
         if (parent_store_file := PathsStorage.PARENT_COLLECTION.value).exists():
             parent_store_file.unlink()
 
-        with open(parent_store_file, "w", encoding="utf-8") as file:
-            json.dump(chunks_storage, file, indent=4, ensure_ascii=False)
+        data = [item.model_dump() for item in chunks_storage]
+        with open(parent_store_file, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+            f.write("\n")
 
 
 if __name__ == "__main__":
@@ -319,40 +321,27 @@ if __name__ == "__main__":
     )
     print(embedder)
 
-    # embedder.add_documents(
-    #     texts=[
-    #         "# This is a sample text.",
-    #         "### Subsection.",
-    #         "The quick brown fox jumps over the lazy dog.",
-    #         "I believe I can fly",
-    #         "I love animals",
-    #         "My father loves my mother very much",
-    #         "I know that my friend John is very lazy",
-    #         "very bright yellow leafs and red blood",
-    #         "I love to eat yellow snow",
-    #         "He scores his first goal in professional league",
-    #         "He is one of the best football players of all time. He is real GOAT!",
-    #     ],
-    #     document_ids=[
-    #         "doc1",
-    #         "doc2",
-    #         "doc3",
-    #         "doc4",
-    #         "doc5",
-    #         "doc6",
-    #         "doc7",
-    #         "doc8",
-    #         "doc9",
-    #         "doc10",
-    #         "doc11",
-    #     ],  # Optional
-    # )
+    embedder.add_documents(
+        texts=[
+            "# This is a sample text.",
+            "### Subsection.",
+            "The quick brown fox jumps over the lazy dog.",
+            "I believe I can fly",
+            "I love animals",
+            "My father loves my mother very much",
+            "I know that my friend John is very lazy",
+            "very bright yellow leafs and red blood",
+            "I love to eat yellow snow",
+            "He scores his first goal in professional league",
+            "He is one of the best football players of all time. He is real GOAT!",
+        ],
+    )
 
-    # results = embedder.similarity_search_with_score_and_threshold(
-    #     "autumn", k=2, threshold=0.2
-    # )
-    # for doc, score in results:
-    #     print(f"Content: {doc.page_content}")
-    #     print(f"Score: {score}")
-    #     print("-" * 50)
-    # embedder.close()
+    results = embedder.similarity_search_with_score_and_threshold(
+        "autumn", k=2, threshold=0.2
+    )
+    for doc, score in results:
+        print(f"Content: {doc.page_content}")
+        print(f"Score: {score}")
+        print("-" * 50)
+    embedder.close()
