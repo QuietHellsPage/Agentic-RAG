@@ -6,7 +6,8 @@ from langchain_ollama import ChatOllama
 from tqdm import tqdm
 
 from src.config.constants import LOGGER as logger
-from src.config.models import AgentConfig, EmbedderConfig
+from src.config.constants import LLMsAndVectorizersStorage
+from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
 from src.helpers.create_vector_db import VectorDatabase
 
@@ -19,7 +20,6 @@ class RAGAgent:
     def __init__(
             self,
             embedder: Embedder,
-            config: AgentConfig,
             llm: ChatOllama
     ):
         """
@@ -27,15 +27,14 @@ class RAGAgent:
 
         Args:
             embedder (Embedder): Embedder instance for retrieval
-            config (AgentConfig): Agent configuration
             llm (Optional[ChatOllama]): Language model for generation
         """
         self.embedder = embedder
-        self.config = config
         self.llm = llm
         self.tools = embedder.get_tools()
 
-        logger.info("RAG Agent initialized with model: %s", config.llm_model_name)
+        logger.info("RAG Agent initialized with model: %s",
+                    LLMsAndVectorizersStorage.GRAPH_LLM.value)
 
     def __repr__(self) -> str:
         """
@@ -44,7 +43,7 @@ class RAGAgent:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}({self.config=!r})"
+        return f"{self.__class__.__name__!r}"
 
     def search_child_chunks(self, question: str) -> str:
         """
@@ -62,7 +61,7 @@ class RAGAgent:
             return "The search tool is not available"
         search_result = search_tool.invoke({
                     "query": question,
-                    "limit": self.config.retrieval_k
+                    "limit": 4
                 })
         if search_result == "NO RELEVANT CHUNKS FOUND":
             return "No relevant information was found to answer the question."
@@ -173,13 +172,8 @@ if __name__ == '__main__':
                         sparse_model=EmbedSparse,
                         vector_db=VectorDatabase,
                         recreate_collection=True)
-    agent_config = AgentConfig(llm_model_name="gpt-3.5-turbo",
-                               temperature=0.7,
-                               retrieval_k=4
-                               )
-    agent_llm = ChatOllama(model=agent_config.llm_model_name,
-                           temperature=agent_config.temperature)
-    agent = RAGAgent(embedder=embedder_for_agent, config=agent_config,
+    agent_llm = LLMsAndVectorizersStorage.GRAPH_LLM.value
+    agent = RAGAgent(embedder=embedder_for_agent,
                      llm=agent_llm)
     context_child = agent.search_child_chunks(QUESTION)
     if agent.needs_parent_chunk(QUESTION, context_child) is True:

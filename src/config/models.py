@@ -45,26 +45,3 @@ class ParentChunk(BaseModel):
     document_id: Annotated[str, Field(min_length=1)]
     parent_id: Annotated[int, Field(ge=0)]
     parent_text: Annotated[str, Field(min_length=1)]
-
-
-class AgentConfig:
-    """
-    Configuration for RAG Agent
-    """
-    def __init__(
-        self,
-        llm_model_name: str = "mistral",
-        temperature: float = 0.7,
-        retrieval_k: int = 4
-    ):
-        """
-               Initialize AgentConfig
-
-               Args:
-                   llm_model_name (str): Name of the LLM model
-                   temperature (float): Temperature for generation
-                   retrieval_k (int): Number of documents to retrieve
-               """
-        self.llm_model_name = llm_model_name
-        self.temperature = temperature
-        self.retrieval_k = retrieval_k
