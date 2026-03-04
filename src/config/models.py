@@ -53,7 +53,7 @@ class AgentConfig:
     """
     def __init__(
         self,
-        llm_model_name: str = "gpt-3.5-turbo",
+        llm_model_name: str = "mistral",
         temperature: float = 0.7,
         retrieval_k: int = 4
     ):

@@ -2,7 +2,7 @@
 Agent for RAG system with tool usage
 """
 from langchain_huggingface import HuggingFaceEmbeddings
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from tqdm import tqdm
 
 from src.config.constants import LOGGER as logger
@@ -20,7 +20,7 @@ class RAGAgent:
             self,
             embedder: Embedder,
             config: AgentConfig,
-            llm: ChatOpenAI
+            llm: ChatOllama
     ):
         """
         Initialize RAG Agent
@@ -28,7 +28,7 @@ class RAGAgent:
         Args:
             embedder (Embedder): Embedder instance for retrieval
             config (AgentConfig): Agent configuration
-            llm (Optional[ChatOpenAI]): Language model for generation
+            llm (Optional[ChatOllama]): Language model for generation
         """
         self.embedder = embedder
         self.config = config
@@ -177,7 +177,7 @@ if __name__ == '__main__':
                                temperature=0.7,
                                retrieval_k=4
                                )
-    agent_llm = ChatOpenAI(model=agent_config.llm_model_name,
+    agent_llm = ChatOllama(model=agent_config.llm_model_name,
                            temperature=agent_config.temperature)
     agent = RAGAgent(embedder=embedder_for_agent, config=agent_config,
                      llm=agent_llm)
