@@ -42,6 +42,7 @@ langchain-experimental==0.4.1
 langchain-huggingface==1.2.0
 langchain-neo4j==0.8.0
 langchain-ollama==1.0.1
+langchain-openai==1.1.10
 langchain-qdrant==1.1.0
 langchain-text-splitters==1.1.0
 langgraph==1.0.8

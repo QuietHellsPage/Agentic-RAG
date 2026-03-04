@@ -1,8 +1,9 @@
 """
 Agent for RAG system with tool usage
 """
-from langchain_community.llms.vllm import VLLM
 from langchain_huggingface import HuggingFaceEmbeddings
+from langchain_openai import ChatOpenAI
+from tqdm import tqdm
 
 from src.config.constants import LOGGER as logger
 from src.config.models import AgentConfig, EmbedderConfig
@@ -19,7 +20,7 @@ class RAGAgent:
             self,
             embedder: Embedder,
             config: AgentConfig,
-            llm
+            llm: ChatOpenAI
     ):
         """
         Initialize RAG Agent
@@ -32,82 +33,131 @@ class RAGAgent:
         self.embedder = embedder
         self.config = config
         self.llm = llm
-
-        # Get tools from embedder
         self.tools = embedder.get_tools()
 
         logger.info("RAG Agent initialized with model: %s", config.llm_model_name)
 
-    def search_and_respond(self, question: str) -> str:
+    def __repr__(self) -> str:
         """
-        Simple search and respond workflow
+        Method that returns string representation of the class
+
+        Returns:
+            str: String representation
+        """
+        return f"{self.__class__.__name__!r}({self.config=!r})"
+
+    def search_child_chunks(self, question: str) -> str:
+        """
+        Search for relevant child chunks based on query.
+
+        Args:
+            question (str): Search query
+
+        Returns:
+            str: Formatted child chunks with metadata or "NO RELEVANT CHUNKS FOUND"
+        """
+        logger.info("Searching for chunks related to: %s", question)
+        search_tool = self.tools[0]
+        if not search_tool:
+            return "The search tool is not available"
+        search_result = search_tool.invoke({
+                    "query": question,
+                    "limit": self.config.retrieval_k
+                })
+        if search_result == "NO RELEVANT CHUNKS FOUND":
+            return "No relevant information was found to answer the question."
+        return search_result
+
+    def search_parent_chunk(self, child_search_result: str) -> str:
+        """
+            Retrieve full parent chunks using IDs from child search results.
+
+            Args:
+                child_search_result (str): Output from search_child_chunks()
+
+            Returns:
+                str: Combined parent chunks or error message if none found
+        """
+        parent_tool = self.tools[1]
+        lines = child_search_result.split("\n")
+        parent_chunks = []
+        unique_parents = []
+        for i in range(0, len(lines), 5):
+            parent_id = lines[i].replace("Parent ID: ", "").strip()
+            doc_id = lines[i + 1].replace("Document ID: ", "").strip()
+            if (parent_id, doc_id) not in unique_parents:
+                unique_parents.append((parent_id, doc_id))
+
+        for parent_id, doc_id in tqdm(unique_parents, desc="Retrieving parent chunks"):
+            result = parent_tool.invoke({
+                "parent_id": parent_id,
+                "document_id": doc_id
+            })
+            if result not in ["NO PARENT COLLECTION", "PARENT_CHUNK_NOT_FOUND"]:
+                parent_chunks.append(result)
+
+        if not parent_chunks:
+            return "No parent chunks could be retrieved."
+
+        logger.info("Successfully retrieved %d parent chunks", len(parent_chunks))
+        return "\n\n---\n\n".join(parent_chunks)
+
+    def needs_parent_chunk(self, question: str, child_chunk: str) -> bool:
+        """
+        Determine if parent chunk is needed to answer the question.
 
         Args:
             question (str): User question
+            child_chunk (str): Child chunk content
 
         Returns:
-            str: Response
+            bool: True if parent chunk is needed, False otherwise
         """
-        try:
-            # Step 1: Search for relevant chunks
-            logger.info("Searching for chunks related to: %s", question)
-            search_tool = self.tools[0]
-            if not search_tool:
-                return "The search tool is not available"
-            search_result = search_tool.invoke({
-                        "query": question,
-                        "limit": self.config.retrieval_k
-                    })
+        prompt = f"""
+                    Based on the question and the available text chunk, 
+                    determine if you need MORE CONTEXT to properly answer the question.
 
-            if search_result == "NO RELEVANT CHUNKS FOUND":
-                return "No relevant information was found to answer the question."
+                    Question: {question}
+                
+                    Available text chunk: {child_chunk}
+                
+                    Do you need the full parent chunk (larger context) to answer this question?
+                    Answer ONLY "yes" or "no".
+                    """
+        need_parent = self.llm.invoke(prompt)
+        if str(need_parent.content).lower() == 'yes':
+            return True
+        return False
 
-            # Step 2: Extract parent IDs and get full context if needed
-            lines = search_result.split("\n")
-            context_parts = []
-            for i in range(0, len(lines), 5):  # Each chunk has 4 lines + separator
-                if i + 3 < len(lines):
-                    parent_id = lines[i].replace("Parent ID: ", "").strip()
-                    doc_id = lines[i + 1].replace("Document ID: ", "").strip()
-                    content = lines[i + 3].replace("Content: ", "").strip()
-                    context_parts.append(f"Context (parent {parent_id}): {content}")
+    def respond(self, context: str, question: str) -> str:
+        """
+        Generate answer using LLM based on retrieved context.
 
-                    # Optionally get full parent chunk
-                    if self.config.use_full_context:
-                        parent_tool = self.tools[1]
-                        parent_result = parent_tool.invoke({
-                                "parent_id": parent_id,
-                                "document_id": doc_id
-                            })
-                        if parent_result not in ["NO PARENT COLLECTION",
-                                                     "PARENT_CHUNK_NOT_FOUND"]:
-                            context_parts.append(f"Full context: {parent_result}")
+        Args:
+            question (str): User question
+            context (str): Retrieved context information
 
-                    # Step 3: Generate response with LLM
-            context = "\n\n".join(context_parts)
-            prompt = f"""
-                            You are a helpful AI assistant that answers questions based on the provided context.
+        Returns:
+            str: Generated response based on context
+        """
+        prompt = f"""
+            You are a helpful AI assistant that answers questions based on the provided context.
                                 
-                                Rules:
-                                1. Only use information from the provided context to answer questions
-                                2. If the context doesn't contain enough information, say so honestly
-                                3. Be specific and cite relevant parts of the context
-                                4. Keep your answers clear and concise
-                                5. If you're unsure, admit it rather than guessing
+                Rules:
+                    1. Only use information from the provided context to answer questions
+                    2. If the context doesn't contain enough information, say so honestly
+                    3. Be specific and cite relevant parts of the context
+                    4. Keep your answers clear and concise
+                    5. If you're unsure, admit it rather than guessing
                                 
-                                Context:
-                                {context}
+                Context: {context}
                                 
-                                Question: {question}
+                Question: {question}
                                 
-                                Answer based on the context above:
-                                """
-            response_to_return = self.llm.invoke(prompt)
-            return response_to_return.content
-
-        except (ValueError, TypeError) as e:
-            logger.error("Error in search_and_respond: %s", str(e))
-            return f"Request processing error: {str(e)}"
+                Answer based on the context above:
+                """
+        response_to_return = self.llm.invoke(prompt)
+        return str(response_to_return.content)
 
 
 if __name__ == '__main__':
@@ -125,12 +175,15 @@ if __name__ == '__main__':
                         recreate_collection=True)
     agent_config = AgentConfig(llm_model_name="gpt-3.5-turbo",
                                temperature=0.7,
-                               max_tokens=500,
-                               retrieval_k=4,
-                               similarity_threshold=0.6,
-                               use_tools=True,
-                               max_iterations=5,
-                               use_full_context=False,)
+                               retrieval_k=4
+                               )
+    agent_llm = ChatOpenAI(model=agent_config.llm_model_name,
+                           temperature=agent_config.temperature)
     agent = RAGAgent(embedder=embedder_for_agent, config=agent_config,
-                     llm=VLLM)
-    response = agent.search_and_respond(QUESTION)
+                     llm=agent_llm)
+    context_child = agent.search_child_chunks(QUESTION)
+    if agent.needs_parent_chunk(QUESTION, context_child) is True:
+        CONTEXT_PARENT = agent.search_parent_chunk(context_child)
+        print(agent.respond(CONTEXT_PARENT, QUESTION))
+    elif agent.needs_parent_chunk(QUESTION, context_child) is False:
+        print(agent.respond(context_child, QUESTION))
