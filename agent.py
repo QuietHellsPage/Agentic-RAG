@@ -1,12 +1,13 @@
 """
 Agent for RAG system with tool usage
 """
+
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 from tqdm import tqdm
 
 from src.config.constants import LOGGER as logger
-from src.config.constants import LLMsAndVectorizersStorage
+from src.config.constants import LLMsAndVectorizersStorage, PromptsStorage
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
 from src.helpers.create_vector_db import VectorDatabase
@@ -17,24 +18,22 @@ class RAGAgent:
     RAG Agent that uses embedder for retrieval and LLM for response generation
     """
 
-    def __init__(
-            self,
-            embedder: Embedder,
-            llm: ChatOllama
-    ):
+    def __init__(self, embedder: Embedder, llm: ChatOllama) -> None:
         """
         Initialize RAG Agent
 
         Args:
             embedder (Embedder): Embedder instance for retrieval
-            llm (Optional[ChatOllama]): Language model for generation
+            llm (ChatOllama): Language model for generation
         """
         self.embedder = embedder
         self.llm = llm
         self.tools = embedder.get_tools()
 
-        logger.info("RAG Agent initialized with model: %s",
-                    LLMsAndVectorizersStorage.GRAPH_LLM.value)
+        logger.info(
+            "RAG Agent initialized with model: %s",
+            LLMsAndVectorizersStorage.GRAPH_LLM.value,
+        )
 
     def __repr__(self) -> str:
         """
@@ -43,7 +42,7 @@ class RAGAgent:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}"
+        return f"{self.__class__.__name__!r}({self.embedder=!r}, {self.llm=!r}, {self.tools=!r})"
 
     def search_child_chunks(self, question: str) -> str:
         """
@@ -56,26 +55,22 @@ class RAGAgent:
             str: Formatted child chunks with metadata or "NO RELEVANT CHUNKS FOUND"
         """
         logger.info("Searching for chunks related to: %s", question)
-        search_tool = self.tools[0]
-        if not search_tool:
+        if not (search_tool := self.tools[0]):
             return "The search tool is not available"
-        search_result = search_tool.invoke({
-                    "query": question,
-                    "limit": 4
-                })
+        search_result = search_tool.invoke({"query": question, "limit": 4})
         if search_result == "NO RELEVANT CHUNKS FOUND":
             return "No relevant information was found to answer the question."
         return search_result
 
     def search_parent_chunk(self, child_search_result: str) -> str:
         """
-            Retrieve full parent chunks using IDs from child search results.
+        Retrieve full parent chunks using IDs from child search results.
 
-            Args:
-                child_search_result (str): Output from search_child_chunks()
+        Args:
+            child_search_result (str): Output from search_child_chunks()
 
-            Returns:
-                str: Combined parent chunks or error message if none found
+        Returns:
+            str: Combined parent chunks or error message if none found
         """
         parent_tool = self.tools[1]
         lines = child_search_result.split("\n")
@@ -88,10 +83,7 @@ class RAGAgent:
                 unique_parents.append((parent_id, doc_id))
 
         for parent_id, doc_id in tqdm(unique_parents, desc="Retrieving parent chunks"):
-            result = parent_tool.invoke({
-                "parent_id": parent_id,
-                "document_id": doc_id
-            })
+            result = parent_tool.invoke({"parent_id": parent_id, "document_id": doc_id})
             if result not in ["NO PARENT COLLECTION", "PARENT_CHUNK_NOT_FOUND"]:
                 parent_chunks.append(result)
 
@@ -112,21 +104,11 @@ class RAGAgent:
         Returns:
             bool: True if parent chunk is needed, False otherwise
         """
-        prompt = f"""
-                    Based on the question and the available text chunk, 
-                    determine if you need MORE CONTEXT to properly answer the question.
-
-                    Question: {question}
-                
-                    Available text chunk: {child_chunk}
-                
-                    Do you need the full parent chunk (larger context) to answer this question?
-                    Answer ONLY "yes" or "no".
-                    """
+        prompt = PromptsStorage.NEEDS_PARENT_CHUNK_PROMPT.value.format(
+            question=question, child_chunk=child_chunk
+        )
         need_parent = self.llm.invoke(prompt)
-        if str(need_parent.content).lower() == 'yes':
-            return True
-        return False
+        return str(need_parent.content).lower() == "yes"
 
     def respond(self, context: str, question: str) -> str:
         """
@@ -139,42 +121,30 @@ class RAGAgent:
         Returns:
             str: Generated response based on context
         """
-        prompt = f"""
-            You are a helpful AI assistant that answers questions based on the provided context.
-                                
-                Rules:
-                    1. Only use information from the provided context to answer questions
-                    2. If the context doesn't contain enough information, say so honestly
-                    3. Be specific and cite relevant parts of the context
-                    4. Keep your answers clear and concise
-                    5. If you're unsure, admit it rather than guessing
-                                
-                Context: {context}
-                                
-                Question: {question}
-                                
-                Answer based on the context above:
-                """
+        prompt = PromptsStorage.RESPONCE_PROMPT.value.format(
+            context=context, question=question
+        )
         response_to_return = self.llm.invoke(prompt)
         return str(response_to_return.content)
 
 
-if __name__ == '__main__':
-    QUESTION = str(input('Введите запрос: '))
+if __name__ == "__main__":
+    QUESTION = str(input("Введите запрос: "))
     embedder_config = EmbedderConfig(
         parent_chunk_size=1024,
         parent_chunk_overlap=256,
         child_chunk_size=512,
         child_chunk_overlap=128,
     )
-    embedder_for_agent = Embedder(config=embedder_config,
-                        embeddings_model=HuggingFaceEmbeddings,
-                        sparse_model=EmbedSparse,
-                        vector_db=VectorDatabase,
-                        recreate_collection=True)
+    embedder_for_agent = Embedder(
+        config=embedder_config,
+        embeddings_model=HuggingFaceEmbeddings,
+        sparse_model=EmbedSparse,
+        vector_db=VectorDatabase,
+        recreate_collection=True,
+    )
     agent_llm = LLMsAndVectorizersStorage.GRAPH_LLM.value
-    agent = RAGAgent(embedder=embedder_for_agent,
-                     llm=agent_llm)
+    agent = RAGAgent(embedder=embedder_for_agent, llm=agent_llm)
     context_child = agent.search_child_chunks(QUESTION)
     if agent.needs_parent_chunk(QUESTION, context_child) is True:
         CONTEXT_PARENT = agent.search_parent_chunk(context_child)

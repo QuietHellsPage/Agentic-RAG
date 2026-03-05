@@ -49,6 +49,40 @@ class PathsStorage(Enum):
     RAW_MD_COLLECTION = DATA_PATH / "raw_texts" / "md_storage"
 
 
+class PromptsStorage(StrEnum):
+    """
+    Storage for prompts
+    """
+    NEEDS_PARENT_CHUNK_PROMPT = """
+                    Based on the question and the available text chunk, 
+                    determine if you need MORE CONTEXT to properly answer the question.
+
+                    Question: {question}
+                
+                    Available text chunk: {child_chunk}
+                
+                    Do you need the full parent chunk (larger context) to answer this question?
+                    Answer ONLY "yes" or "no".
+                    """
+
+    RESPONCE_PROMPT = """
+                    You are a helpful AI assistant that answers questions based on the provided context.
+                                    
+                    Rules:
+                        1. Only use information from the provided context to answer questions
+                        2. If the context doesn't contain enough information, say so honestly
+                        3. Be specific and cite relevant parts of the context
+                        4. Keep your answers clear and concise
+                        5. If you're unsure, admit it rather than guessing
+                                    
+                    Context: {context}
+                                    
+                    Question: {question}
+                                    
+                    Answer based on the context above:
+                    """
+
+
 class LLMsAndVectorizersStorage(Enum):
     """
     Storage for LLMs and vectorizers that are used
