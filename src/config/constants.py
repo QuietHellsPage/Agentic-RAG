@@ -83,6 +83,16 @@ class PromptsStorage(StrEnum):
                     Answer based on the context above:
                     """
 
+    REFORMULATE_PROMPT = """
+                    The following question did not return relevant results from the knowledge base.
+                    Rephrase it to improve semantic search recall: use synonyms, change the structure,
+                    or make it more general. Return ONLY the rephrased question, nothing else.
+
+                    Original question: {question}
+
+                    Rephrased question:
+                    """
+
 
 class LLMsAndVectorizersStorage(Enum):
     """
