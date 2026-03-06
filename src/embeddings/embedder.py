@@ -304,44 +304,44 @@ class Embedder:
             f.write("\n")
 
 
-if __name__ == "__main__":
-    embedder_config = EmbedderConfig(
-        parent_chunk_size=1024,
-        parent_chunk_overlap=256,
-        child_chunk_size=512,
-        child_chunk_overlap=128,
-    )
+# if __name__ == "__main__":
+#     embedder_config = EmbedderConfig(
+#         parent_chunk_size=1024,
+#         parent_chunk_overlap=256,
+#         child_chunk_size=512,
+#         child_chunk_overlap=128,
+#     )
 
-    embedder = Embedder(
-        config=embedder_config,
-        embeddings_model=HuggingFaceEmbeddings,
-        sparse_model=EmbedSparse,
-        vector_db=VectorDatabase,
-        recreate_collection=True,
-    )
-    print(embedder)
+#     embedder = Embedder(
+#         config=embedder_config,
+#         embeddings_model=HuggingFaceEmbeddings,
+#         sparse_model=EmbedSparse,
+#         vector_db=VectorDatabase,
+#         recreate_collection=True,
+#     )
+#     print(embedder)
 
-    embedder.add_documents(
-        texts=[
-            "# This is a sample text.",
-            "### Subsection.",
-            "The quick brown fox jumps over the lazy dog.",
-            "I believe I can fly",
-            "I love animals",
-            "My father loves my mother very much",
-            "I know that my friend John is very lazy",
-            "very bright yellow leafs and red blood",
-            "I love to eat yellow snow",
-            "He scores his first goal in professional league",
-            "He is one of the best football players of all time. He is real GOAT!",
-        ],
-    )
+#     embedder.add_documents(
+#         texts=[
+#             "# This is a sample text.",
+#             "### Subsection.",
+#             "The quick brown fox jumps over the lazy dog.",
+#             "I believe I can fly",
+#             "I love animals",
+#             "My father loves my mother very much",
+#             "I know that my friend John is very lazy",
+#             "very bright yellow leafs and red blood",
+#             "I love to eat yellow snow",
+#             "He scores his first goal in professional league",
+#             "He is one of the best football players of all time. He is real GOAT!",
+#         ],
+#     )
 
-    results = embedder.similarity_search_with_score_and_threshold(
-        "autumn", k=2, threshold=0.2
-    )
-    for doc, score in results:
-        print(f"Content: {doc.page_content}")
-        print(f"Score: {score}")
-        print("-" * 50)
-    embedder.close()
+#     results = embedder.similarity_search_with_score_and_threshold(
+#         "autumn", k=2, threshold=0.2
+#     )
+#     for doc, score in results:
+#         print(f"Content: {doc.page_content}")
+#         print(f"Score: {score}")
+#         print("-" * 50)
+#     embedder.close()

@@ -2,7 +2,7 @@
 Models for processing embeddings
 """
 
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -45,3 +45,16 @@ class ParentChunk(BaseModel):
     document_id: Annotated[str, Field(min_length=1)]
     parent_id: Annotated[int, Field(ge=0)]
     parent_text: Annotated[str, Field(min_length=1)]
+
+
+class RAGState(TypedDict):
+    """
+    Shared state passed between all graph nodes
+    """
+
+    question: str
+    original_question: str
+    child_chunks: str
+    parent_chunks: str
+    answer: str
+    reformulated: bool
