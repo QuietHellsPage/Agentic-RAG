@@ -94,7 +94,7 @@ class VectorDatabase:
         return self._vector_store.similarity_search_with_score(query, k=k)
 
     def similarity_search_with_score_and_threshold(
-        self, query: str, k: int = 4, threshold: float = 0.6
+        self, query: str, k: int = 4, threshold: float = 0.3
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores and threshold.

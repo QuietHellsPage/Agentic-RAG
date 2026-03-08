@@ -3,10 +3,9 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import json
-import os
 from typing import Optional
 
-import torch
+from dotenv import load_dotenv
 from langchain_core.documents import Document
 from langchain_core.tools import BaseTool
 from langchain_huggingface import HuggingFaceEmbeddings
@@ -21,12 +20,14 @@ from src.config.constants import (
     TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
     PathsStorage,
-    EMBEDDINGS_DEVICE_ENV,
     LOGGER as logger,
 )
 from src.config.models import EmbedderConfig, ParentChunk
 from src.helpers.create_vector_db import VectorDatabase
 from src.tools.tools import AgentTools
+from src.helpers.utils import _choose_device
+
+load_dotenv()
 
 
 class EmbedSparse(FastEmbedSparse):
@@ -43,13 +44,7 @@ class EmbedSparse(FastEmbedSparse):
         Args:
             device (Optional[str]): Device that operates embeddings processing
         """
-        if device is None:
-            if not (env_device := os.getenv(EMBEDDINGS_DEVICE_ENV)):
-                self._device = "cuda" if torch.cuda.is_available() else "cpu"
-            else:
-                self._device = env_device
-        else:
-            self._device = device
+        self._device = _choose_device(device)
 
         super().__init__(model_name=self._model_name, device=self._device)
 
@@ -123,13 +118,7 @@ class Embedder:
             device (Optional[str]): Device that operates embeddings processing
             recreate_collection (bool): Flag to recreate collection
         """
-        if device is None:
-            if not (env_device := os.getenv(EMBEDDINGS_DEVICE_ENV)):
-                self._device = "cuda" if torch.cuda.is_available() else "cpu"
-            else:
-                self._device = env_device
-        else:
-            self._device = device
+        self._device = _choose_device(device)
 
         self._config = config
         self._parent_chunk_size = self._config.parent_chunk_size
@@ -234,7 +223,7 @@ class Embedder:
         return self._vector_db.similarity_search_with_score(query, k)
 
     def similarity_search_with_score_and_threshold(
-        self, query: str, k: int = 4, threshold: float = 0.6
+        self, query: str, k: int = 4, threshold: float = 0.3
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores and threshold.
@@ -302,46 +291,3 @@ class Embedder:
         with open(parent_store_file, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
             f.write("\n")
-
-
-# if __name__ == "__main__":
-#     embedder_config = EmbedderConfig(
-#         parent_chunk_size=1024,
-#         parent_chunk_overlap=256,
-#         child_chunk_size=512,
-#         child_chunk_overlap=128,
-#     )
-
-#     embedder = Embedder(
-#         config=embedder_config,
-#         embeddings_model=HuggingFaceEmbeddings,
-#         sparse_model=EmbedSparse,
-#         vector_db=VectorDatabase,
-#         recreate_collection=True,
-#     )
-#     print(embedder)
-
-#     embedder.add_documents(
-#         texts=[
-#             "# This is a sample text.",
-#             "### Subsection.",
-#             "The quick brown fox jumps over the lazy dog.",
-#             "I believe I can fly",
-#             "I love animals",
-#             "My father loves my mother very much",
-#             "I know that my friend John is very lazy",
-#             "very bright yellow leafs and red blood",
-#             "I love to eat yellow snow",
-#             "He scores his first goal in professional league",
-#             "He is one of the best football players of all time. He is real GOAT!",
-#         ],
-#     )
-
-#     results = embedder.similarity_search_with_score_and_threshold(
-#         "autumn", k=2, threshold=0.2
-#     )
-#     for doc, score in results:
-#         print(f"Content: {doc.page_content}")
-#         print(f"Score: {score}")
-#         print("-" * 50)
-#     embedder.close()

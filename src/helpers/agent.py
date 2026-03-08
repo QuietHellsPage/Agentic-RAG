@@ -8,7 +8,6 @@ from langchain_ollama import ChatOllama
 
 from src.config.constants import LOGGER as logger
 from src.config.constants import LLMsAndVectorizersStorage
-from src.config.models import RAGState
 from src.embeddings.embedder import Embedder
 from src.helpers.agent_factories import build_rag_graph
 
@@ -44,27 +43,6 @@ class RAGAgent:
         """
         return f"{self.__class__.__name__!r}(" f"{self.embedder=!r}, " f"{self.llm=!r})"
 
-    def ask(self, question: str) -> str:
-        """
-        Function that wraps asking pipeline
-
-        Args:
-            question (str): Input question
-
-        Returns:
-            str: Answer
-        """
-        initial_state = {
-            "question": question,
-            "original_question": question,
-            "child_chunks": "",
-            "parent_chunks": "",
-            "answer": "",
-            "reformulated": False,
-        }
-        final_state = self._app.invoke(initial_state)
-        return final_state["answer"]
-
     def stream(self, question: str) -> Iterable:
         """
         Function that shows streaming process of answering
@@ -83,4 +61,6 @@ class RAGAgent:
             "answer": "",
             "reformulated": False,
         }
-        yield from self._app.stream(initial_state)
+        for chunk, *_ in self._app.stream(initial_state, stream_mode="messages"):
+            if hasattr(chunk, "content") and chunk.content:
+                yield chunk.content

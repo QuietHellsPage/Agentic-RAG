@@ -6,8 +6,6 @@ import logging
 from enum import Enum, StrEnum
 from pathlib import Path
 
-from langchain_ollama import ChatOllama
-
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -101,7 +99,7 @@ class LLMsAndVectorizersStorage(Enum):
 
     DENSE_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
     SPARSE_MODEL_NAME = "Qdrant/bm25"
-    GRAPH_LLM = ChatOllama(model="mistral")
+    GRAPH_LLM = "mistral"
 
 
 class GraphLabelsStorage(StrEnum):

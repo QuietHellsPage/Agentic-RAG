@@ -47,6 +47,57 @@ class ParentChunk(BaseModel):
     parent_text: Annotated[str, Field(min_length=1)]
 
 
+class ChildChunkItem(BaseModel):
+    """
+    Single retrieved child chunk with metadata
+    """
+
+    parent_id: int
+    document_id: str
+    chunk_id: int
+    content: str
+    score: float
+
+
+class SearchResult(BaseModel):
+    """
+    Result of child chunk search
+    """
+
+    chunks: list[ChildChunkItem] = Field(default_factory=list)
+
+    @property
+    def found(self) -> bool:
+        """
+        Property that returns result of search
+
+        Returns:
+            bool: Result of search
+        """
+        return len(self.chunks) > 0
+
+
+class ParentChunkResult(BaseModel):
+    """
+    Result of parent chunk retrieval
+    """
+
+    document_id: str = ""
+    parent_id: int = -1
+    content: str = ""
+    found: bool = False
+
+    @classmethod
+    def not_found(cls) -> "ParentChunkResult":
+        """
+        Returns result of search
+
+        Returns:
+            ParentChunkResult: Result of search
+        """
+        return cls(found=False)
+
+
 class RAGState(TypedDict):
     """
     Shared state passed between all graph nodes
@@ -54,7 +105,7 @@ class RAGState(TypedDict):
 
     question: str
     original_question: str
-    child_chunks: str
+    child_chunks: list[ChildChunkItem]
     parent_chunks: str
     answer: str
     reformulated: bool

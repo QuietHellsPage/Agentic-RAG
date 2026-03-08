@@ -2,7 +2,8 @@
 Factories and helpers for agent working pipeline
 """
 
-from typing import Literal, Callable
+from collections.abc import Callable
+from typing import Literal
 
 from langchain_ollama import ChatOllama
 from langgraph.graph import END, START, StateGraph
@@ -28,7 +29,7 @@ def make_retrieve_children(embedder: Embedder) -> Callable:
 
     search_tool = embedder.get_tools()[0]
 
-    def retrieve_children(state: RAGState) -> dict[str, str]:
+    def retrieve_children(state: RAGState) -> dict[str, list]:
         """
         Function that retrieves child chunks
 
@@ -36,18 +37,19 @@ def make_retrieve_children(embedder: Embedder) -> Callable:
             state (RAGState): State of the agent
 
         Returns:
-            dict[str, str]: Found chunks
+            dict[str, list]: Found chunks
         """
         question = state["question"]
         logger.info("retrieve_children: query=%r", question)
 
         result = search_tool.invoke({"query": question, "limit": 4})
 
-        if result == "NO RELEVANT CHUNKS FOUND":
+        if not result.found:
             logger.warning("retrieve_children: no relevant chunks found")
-            result = ""
+            return {"child_chunks": []}
 
-        return {"child_chunks": result}
+        logger.info("retrieve_children: found %d chunks", len(result.chunks))
+        return {"child_chunks": result.chunks}
 
     return retrieve_children
 
@@ -63,7 +65,7 @@ def make_reformulate_query(llm: ChatOllama) -> Callable:
         Callable: Function that reformulates question
     """
 
-    def reformulate_query(state: RAGState) -> dict[str, str | bool]:
+    def reformulate_query(state: RAGState) -> dict[str, str | bool | list]:
         """
         Function that reformulates question
 
@@ -84,7 +86,7 @@ def make_reformulate_query(llm: ChatOllama) -> Callable:
         return {
             "question": new_question,
             "reformulated": True,
-            "child_chunks": "",
+            "child_chunks": [],
             "parent_chunks": "",
         }
 
@@ -119,31 +121,24 @@ def make_retrieve_parents(embedder: Embedder) -> Callable:
         if not child_chunks:
             return {"parent_chunks": ""}
 
-        chunk_blocks = child_chunks.split("\n\n")
+        seen = set()
+        unique = []
+        for chunk in child_chunks:
+            key = (chunk.parent_id, chunk.document_id)
+            if key not in seen:
+                seen.add(key)
+                unique.append(chunk)
 
-        unique_parents = []
-        for block in chunk_blocks:
-            parent_id = None
-            doc_id = None
-            for line in block.splitlines():
-                if line.startswith("Parent ID: "):
-                    parent_id = line.removeprefix("Parent ID: ").strip()
-                elif line.startswith("Document ID: "):
-                    doc_id = line.removeprefix("Document ID: ").strip()
-
-            if parent_id and doc_id and (parent_id, doc_id) not in unique_parents:
-                unique_parents.append((parent_id, doc_id))
-
-        parent_chunks = []
-        for parent_id, doc_id in tqdm(unique_parents, desc="Retrieving parent chunks"):
+        parent_texts = []
+        for chunk in tqdm(unique, desc="Retrieving parent chunks"):
             result = parent_tool.invoke(
-                {"parent_id": parent_id, "document_id": doc_id}
+                {"parent_id": chunk.parent_id, "document_id": chunk.document_id}
             )
-            if result not in ("NO PARENT COLLECTION", "PARENT_CHUNK_NOT_FOUND"):
-                parent_chunks.append(result)
+            if result.found:
+                parent_texts.append(result.content)
 
-        combined = "\n\n---\n\n".join(parent_chunks) if parent_chunks else ""
-        logger.info("retrieve_parents: retrieved %d chunks", len(parent_chunks))
+        combined = "\n\n---\n\n".join(parent_texts)
+        logger.info("retrieve_parents: retrieved %d chunks", len(parent_texts))
         return {"parent_chunks": combined}
 
     return retrieve_parents
@@ -171,13 +166,15 @@ def make_generate(llm: ChatOllama) -> Callable:
             dict[str, str]: Answer
         """
         question = state["original_question"]
-        child_chunks = state["child_chunks"]
         parent_chunks = state.get("parent_chunks", "")
+        child_chunks = state.get("child_chunks", [])
 
-        context = parent_chunks if parent_chunks else child_chunks
-
-        if not context:
-            logger.warning("generate: no context available, answering without RAG")
+        if parent_chunks:
+            context = parent_chunks
+        elif child_chunks:
+            context = "\n\n".join(c.content for c in child_chunks)
+        else:
+            logger.warning("generate: no context available")
             context = "No relevant information was found in the knowledge base."
 
         prompt = PromptsStorage.RESPONCE_PROMPT.value.format(
