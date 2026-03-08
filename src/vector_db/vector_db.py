@@ -7,15 +7,11 @@ from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_qdrant import QdrantVectorStore, RetrievalMode
 from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from qdrant_client import QdrantClient
+from qdrant_client.models import Distance, SparseVectorParams, VectorParams
 
-# isort: off
-from qdrant_client.models import (
-    Distance,
-    SparseVectorParams,
-    VectorParams,
-)
-
-from src.config.constants import PathsStorage, EMBEDDINGS_SIZE, LOGGER as logger
+from src.config.constants import EMBEDDINGS_SIZE
+from src.config.constants import LOGGER as logger
+from src.config.constants import PathsStorage
 
 
 class VectorDatabase:

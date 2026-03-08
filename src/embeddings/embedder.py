@@ -15,17 +15,18 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import SparseVector
 from tqdm import tqdm
 
-# isort: off
 from src.config.constants import (
-    TEXT_SPLITTER_SEPARATORS,
     LLMsAndVectorizersStorage,
+)
+from src.config.constants import LOGGER as logger
+from src.config.constants import (
     PathsStorage,
-    LOGGER as logger,
+    TEXT_SPLITTER_SEPARATORS,
 )
 from src.config.models import EmbedderConfig, ParentChunk
-from src.helpers.create_vector_db import VectorDatabase
-from src.tools.tools import AgentTools
 from src.helpers.utils import _choose_device
+from src.tools.tools import AgentTools
+from src.vector_db.vector_db import VectorDatabase
 
 load_dotenv()
 

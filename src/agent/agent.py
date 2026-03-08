@@ -6,8 +6,8 @@ from typing import Iterable
 
 from langchain_ollama import ChatOllama
 
-from src.config.constants import LOGGER as logger
 from src.config.constants import LLMsAndVectorizersStorage
+from src.config.constants import LOGGER as logger
 from src.embeddings.embedder import Embedder
 from src.helpers.agent_factories import build_rag_graph
 

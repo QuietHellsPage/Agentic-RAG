@@ -7,7 +7,6 @@ from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_neo4j import Neo4jGraph
 from langchain_ollama import ChatOllama
 
-# isort: off
 from src.config.constants import GraphAllowedConstants, LLMsAndVectorizersStorage
 from src.graph_db.graph import Graph
 

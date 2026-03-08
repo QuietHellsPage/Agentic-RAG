@@ -64,7 +64,7 @@ class SearchResult(BaseModel):
     Result of child chunk search
     """
 
-    chunks: list[ChildChunkItem] = Field(default_factory=list)
+    chunks: Annotated[list[ChildChunkItem], Field(default_factory=list)]
 
     @property
     def found(self) -> bool:
@@ -82,10 +82,10 @@ class ParentChunkResult(BaseModel):
     Result of parent chunk retrieval
     """
 
-    document_id: str = ""
-    parent_id: int = -1
-    content: str = ""
-    found: bool = False
+    document_id: Annotated[str, Field(default="")] = ""
+    parent_id: Annotated[int, Field(default=-1)] = -1
+    content: Annotated[str, Field(default="")] = ""
+    found: Annotated[bool, Field(default=False)] = False
 
     @classmethod
     def not_found(cls) -> "ParentChunkResult":

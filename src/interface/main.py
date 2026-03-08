@@ -9,12 +9,12 @@ import gradio as gr
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_ollama import ChatOllama
 
-from src.config.constants import LOGGER as logger
+from src.agent.agent import RAGAgent
 from src.config.constants import LLMsAndVectorizersStorage
+from src.config.constants import LOGGER as logger
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
-from src.helpers.agent import RAGAgent
-from src.helpers.create_vector_db import VectorDatabase
+from src.vector_db.vector_db import VectorDatabase
 
 _DATA_FILE = Path("data/raw_texts/md_storage/US_Code_Title_18.md")
 
@@ -57,7 +57,7 @@ def _build_agent(populate: bool = True) -> RAGAgent:
     return RAGAgent(embedder, llm)
 
 
-_agent: RAGAgent = _build_agent(populate=True)
+_agent = _build_agent(populate=True)
 
 
 def chat(message: str, _) -> Iterable:
