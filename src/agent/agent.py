@@ -22,7 +22,7 @@ class RAGAgent:
         Initialize an instance of RAGAgent
 
         Args:
-            embedder (RAGSEmbeddertate): Embedder for chunks
+            embedder (Embedder): Embedder for chunks
             llm (ChatOllama): agent llm
         """
         self.embedder = embedder
