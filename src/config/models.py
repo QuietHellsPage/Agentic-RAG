@@ -2,7 +2,7 @@
 Models for processing embeddings
 """
 
-from typing import Annotated
+from typing import Annotated, TypedDict
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -45,3 +45,67 @@ class ParentChunk(BaseModel):
     document_id: Annotated[str, Field(min_length=1)]
     parent_id: Annotated[int, Field(ge=0)]
     parent_text: Annotated[str, Field(min_length=1)]
+
+
+class ChildChunkItem(BaseModel):
+    """
+    Single retrieved child chunk with metadata
+    """
+
+    parent_id: int
+    document_id: str
+    chunk_id: int
+    content: str
+    score: float
+
+
+class SearchResult(BaseModel):
+    """
+    Result of child chunk search
+    """
+
+    chunks: Annotated[list[ChildChunkItem], Field(default_factory=list)]
+
+    @property
+    def found(self) -> bool:
+        """
+        Property that returns result of search
+
+        Returns:
+            bool: Result of search
+        """
+        return len(self.chunks) > 0
+
+
+class ParentChunkResult(BaseModel):
+    """
+    Result of parent chunk retrieval
+    """
+
+    document_id: Annotated[str, Field(default="")] = ""
+    parent_id: Annotated[int, Field(default=-1)] = -1
+    content: Annotated[str, Field(default="")] = ""
+    found: Annotated[bool, Field(default=False)] = False
+
+    @classmethod
+    def not_found(cls) -> "ParentChunkResult":
+        """
+        Returns result of search
+
+        Returns:
+            ParentChunkResult: Result of search
+        """
+        return cls(found=False)
+
+
+class RAGState(TypedDict):
+    """
+    Shared state passed between all graph nodes
+    """
+
+    question: str
+    original_question: str
+    child_chunks: list[ChildChunkItem]
+    parent_chunks: str
+    answer: str
+    reformulated: bool

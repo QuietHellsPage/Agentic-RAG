@@ -5,8 +5,8 @@ Create graph db and process text
 from langchain_core.documents import Document
 from langchain_experimental.graph_transformers import LLMGraphTransformer
 from langchain_neo4j import Neo4jGraph
+from langchain_ollama import ChatOllama
 
-# isort: off
 from src.config.constants import GraphAllowedConstants, LLMsAndVectorizersStorage
 from src.graph_db.graph import Graph
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     graph.clean_graph()
 
     graph_transformer = LLMGraphTransformer(
-        llm=LLMsAndVectorizersStorage.GRAPH_LLM.value,
+        llm=ChatOllama(model=LLMsAndVectorizersStorage.GRAPH_LLM.value),
         allowed_nodes=GraphAllowedConstants.ALLOWED_NODES.value,
         allowed_relationships=GraphAllowedConstants.ALLOWED_RELATIONSHIPS.value,
         node_properties=GraphAllowedConstants.NODE_PROPERTIES.value,

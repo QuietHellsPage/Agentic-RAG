@@ -65,3 +65,8 @@ class Processor:
                 encoding="utf-8", errors="ignore"
             )
             md_path.write_bytes(clean_md.encode(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    processor = Processor()
+    processor.process_corpus()

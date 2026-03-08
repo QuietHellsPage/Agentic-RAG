@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from langchain_core.tools import BaseTool, tool
 
 from src.config.constants import PathsStorage
+from src.config.models import ChildChunkItem, ParentChunkResult, SearchResult
 
 if TYPE_CHECKING:
     from src.embeddings.embedder import Embedder
@@ -46,62 +47,63 @@ class AgentTools:
         """
 
         @tool
-        def search_child_chunks(query: str, limit: int) -> str:
+        def search_child_chunks(query: str, limit: int) -> SearchResult:
             """
             Method that searches for relevant child chunks
 
             Args:
-                query (str): Input query
-                limit (int): Limit of chunks that can be returned
+                query (str): Natural language query
+                limit (int): Maximum number of chunks to return
 
             Returns:
-                str: Massive of chunks found
+                SearchResult: Structured search results
             """
-            results = self.embedder.similarity_search_with_score_and_threshold(
-                query, limit
-            )
-            if not results:
-                return "NO RELEVANT CHUNKS FOUND"
-
-            return "\n\n".join(
-                [
-                    f"Parent ID: {doc.metadata.get("parent_id", "NO PARENT ID")}\n"
-                    f"Document ID: {doc.metadata.get("document_id", "NO DOCUMENT ID")}\n"
-                    f"Chunk ID: {doc.metadata.get("chunk_id", "NO CHUNK ID")}\n"
-                    f"Content: {doc.page_content.strip()}"
-                    for doc, _ in results
-                ]
-            )
+            raw = self.embedder.similarity_search_with_score_and_threshold(query, limit)
+            chunks = [
+                ChildChunkItem(
+                    parent_id=doc.metadata.get("parent_id", -1),
+                    document_id=doc.metadata.get("document_id", ""),
+                    chunk_id=doc.metadata.get("chunk_id", -1),
+                    content=doc.page_content.strip(),
+                    score=score,
+                )
+                for doc, score in raw
+            ]
+            return SearchResult(chunks=chunks)
 
         @tool
-        def retrieve_parent_chunks(parent_id: str, document_id: str) -> str:
+        def retrieve_parent_chunks(
+            parent_id: int, document_id: str
+        ) -> ParentChunkResult:
             """
             Method that enables agent to retrieve parent chunks
 
             Args:
-                parent_id (str): ID of parent chunk
-                document_id (str): ID of document from where chunk was processed
+                parent_id (int): ID of the parent chunk
+                document_id (str): ID of the source document
 
             Returns:
-                str: Massive of chunks found
+                ParentChunkResult: Structured parent chunk or not-found sentinel
             """
             parent_collection = PathsStorage.PARENT_COLLECTION.value
             if not parent_collection.exists():
-                return "NO PARENT COLLECTION"
-            with open(parent_collection, "r", encoding="utf-8") as file:
-                data = json.load(file)
+                return ParentChunkResult.not_found()
+
+            with open(parent_collection, "r", encoding="utf-8") as f:
+                data = json.load(f)
 
             for item in data:
                 if (
-                    str(item.get("document_id")) == document_id
-                    and str(item.get("parent_id")) == parent_id
+                    str(item.get("document_id")) == str(document_id)
+                    and int(item.get("parent_id", -1)) == parent_id
                 ):
-                    return (
-                        f"Document ID: {item.get("document_id", "")}\n"
-                        f"Parent ID: {item.get("parent_id", "")}\n"
-                        f"Content: {item.get("parent_text", "").strip()}"
+                    return ParentChunkResult(
+                        document_id=item["document_id"],
+                        parent_id=item["parent_id"],
+                        content=item.get("parent_text", "").strip(),
+                        found=True,
                     )
 
-            return "PARENT_CHUNK_NOT_FOUND"
+            return ParentChunkResult.not_found()
 
         return (search_child_chunks, retrieve_parent_chunks)

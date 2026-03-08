@@ -1,5 +1,6 @@
 [tool.mypy]
 python_version = "3.13"
+exclude = ["venv*", ".venv*"]
 
 [[tool.mypy.overrides]]
 module = "src.embeddings.embedder"
@@ -19,6 +20,14 @@ max-positional-arguments=7
 [tool.pylint.MASTER]
 max-locals = 20
 
-[tool.pylint.'design']
+[tool.pylint."design"]
 min-public-methods = 1
 max-attributes=10
+
+[tool.isort]
+profile = "black"
+py_version = "313"
+skip_gitignore = true
+line_length = 100
+order_by_type = true
+force_alphabetical_sort_within_sections = true
