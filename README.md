@@ -94,7 +94,31 @@ pip install -r requirements.txt
 
 ---
 
-### Step 5 — Run the RAG
+### Step 5 — Configure the Device (Optional)
+
+The device determines what hardware is used to compute embeddings. By default, **CPU** is used, so you can skip this step if you're unsure or just getting started.
+
+However, if you want to speed up the indexing process, you can configure a faster device by creating a `.env` file in the **root directory of the project** with the following content:
+```properties
+EMBEDDINGS_DEVICE=
+```
+
+Set the value based on your hardware:
+
+| Value | When to use |
+|-------|-------------|
+| `cpu` | Default — works on any machine |
+| `cuda` | NVIDIA GPU |
+| `mps` | Mac with Apple Silicon — use `cpu` instead if you run into memory issues
+
+For example, on a Mac with Apple Silicon:
+```properties
+EMBEDDINGS_DEVICE=mps
+```
+
+---
+
+### Step 6 — Run the RAG
 
 Start the main interface:
 
