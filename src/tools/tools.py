@@ -52,8 +52,8 @@ class AgentTools:
             Method that searches for relevant child chunks
 
             Args:
-                query: Natural language query
-                limit: Maximum number of chunks to return
+                query (str): Natural language query
+                limit (int): Maximum number of chunks to return
 
             Returns:
                 SearchResult: Structured search results
@@ -79,8 +79,8 @@ class AgentTools:
             Method that enables agent to retrieve parent chunks
 
             Args:
-                parent_id: ID of the parent chunk
-                document_id: ID of the source document
+                parent_id (int): ID of the parent chunk
+                document_id (str): ID of the source document
 
             Returns:
                 ParentChunkResult: Structured parent chunk or not-found sentinel
