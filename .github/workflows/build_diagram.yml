@@ -1,23 +1,19 @@
 name: Generate plantuml diagram
 
 on:
+  push:
+    branches: [ main ]
   pull_request:
     branches: [ main ]
 
 jobs:
-  generate_plantuml:
+  plantuml:
     runs-on: ubuntu-latest
-    name: plantuml
     steps:
-    - name: checkout
-      uses: actions/checkout@v6
-      with:
-        fetch-depth: 1
-    - name: plantuml
-      id: plantuml
-      uses: grassedge/generate-plantuml-action@v1.5
-      with:
-        path: assets/diagram.puml
-        message: "Render PlantUML files"
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Generate SVG Diagram
+        uses: holowinski/plantuml-github-action@main
+        with:
+          args: -v -tsvg diagrams/*.puml
