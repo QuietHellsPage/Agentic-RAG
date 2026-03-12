@@ -99,7 +99,7 @@ class LLMsAndVectorizersStorage(Enum):
 
     DENSE_MODEL_NAME = "Qwen/Qwen3-Embedding-0.6B"
     SPARSE_MODEL_NAME = "Qdrant/bm25"
-    GRAPH_LLM = "mistral"
+    GENERATION_LLM = "mistral"
 
 
 class GraphLabelsStorage(StrEnum):

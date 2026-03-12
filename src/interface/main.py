@@ -2,7 +2,6 @@
 Main point of RAG
 """
 
-from pathlib import Path
 from typing import Iterable
 
 import gradio as gr
@@ -14,9 +13,8 @@ from src.config.constants import LLMsAndVectorizersStorage
 from src.config.constants import LOGGER as logger
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
+from src.helpers.utils import _collection_is_ready, _load_md_files
 from src.vector_db.vector_db import VectorDatabase
-
-_DATA_FILE = Path("data/raw_texts/md_storage/US_Code_Title_18.md")
 
 _EMBEDDER_CONFIG = EmbedderConfig(
     parent_chunk_size=1024,
@@ -26,16 +24,16 @@ _EMBEDDER_CONFIG = EmbedderConfig(
 )
 
 
-def _build_agent(populate: bool = True) -> RAGAgent:
+def _build_agent() -> RAGAgent:
     """
-    Creates embedder and agent once
-
-    Args:
-        populate (bool): Flag to recreate embedder
+    Method that creates embedder and agent.
+    Skips populating if collection already exists.
 
     Returns:
         RAGAgent: Instance of agent
     """
+    populate = not _collection_is_ready()
+
     embedder = Embedder(
         config=_EMBEDDER_CONFIG,
         embeddings_model=HuggingFaceEmbeddings,
@@ -45,19 +43,19 @@ def _build_agent(populate: bool = True) -> RAGAgent:
     )
 
     if populate:
-        if not _DATA_FILE.exists():
-            raise FileNotFoundError(f"Data file not found: {_DATA_FILE}")
-        data = _DATA_FILE.read_text(encoding="utf-8")
-        embedder.add_documents(texts=[data], document_ids=["pinker"])
-        logger.info("Documents loaded into vector store")
+        texts, doc_ids = _load_md_files()
+        embedder.add_documents(texts=texts, document_ids=doc_ids)
+        logger.info("Documents loaded into vector store (%d files)", len(texts))
     else:
-        logger.info("Using existing vector store")
+        logger.info("Reusing existing vector store — skipping populate")
 
-    llm = ChatOllama(model=LLMsAndVectorizersStorage.GRAPH_LLM.value, temperature=1.2)
+    llm = ChatOllama(
+        model=LLMsAndVectorizersStorage.GENERATION_LLM.value, temperature=1.2
+    )
     return RAGAgent(embedder, llm)
 
 
-_agent = _build_agent(populate=True)
+_agent = _build_agent()
 
 
 def chat(message: str, _) -> Iterable:
@@ -65,7 +63,7 @@ def chat(message: str, _) -> Iterable:
     Main method that operates running chat
 
     Args:
-        message (str): Inpute message
+        message (str): Input message
 
     Returns:
         Iterable: Answer through tokens
