@@ -31,7 +31,7 @@ class RAGAgent:
 
         logger.info(
             "RAGAgent (LangGraph) initialised with model: %s",
-            LLMsAndVectorizersStorage.GRAPH_LLM.value,
+            LLMsAndVectorizersStorage.GENERATION_LLM.value,
         )
 
     def __repr__(self) -> str:

@@ -25,7 +25,7 @@ if __name__ == "__main__":
     graph.clean_graph()
 
     graph_transformer = LLMGraphTransformer(
-        llm=ChatOllama(model=LLMsAndVectorizersStorage.GRAPH_LLM.value),
+        llm=ChatOllama(model=LLMsAndVectorizersStorage.GENERATION_LLM.value),
         allowed_nodes=GraphAllowedConstants.ALLOWED_NODES.value,
         allowed_relationships=GraphAllowedConstants.ALLOWED_RELATIONSHIPS.value,
         node_properties=GraphAllowedConstants.NODE_PROPERTIES.value,
