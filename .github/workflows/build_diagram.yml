@@ -10,6 +10,9 @@ jobs:
   diagram:
     runs-on: ubuntu-latest
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
       - name: Create repo visualization
         uses: githubocto/repo-visualizer@0.7.1
         with:
