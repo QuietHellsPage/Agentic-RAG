@@ -154,6 +154,42 @@ class Embedder:
         return f"{self.__class__.__name__!r}({self._config=!r}, " \
                f"{self._device=!r}, {self._recreate_collection=!r})"
 
+    def _generate_child_chunks(
+            self,
+            child_splitter,
+            document_id: int,
+            doc_idx: int,
+            parent_id: int,
+            parent_chunk: ParentChunk
+    ):
+        for child_id, child_chunk in enumerate(
+                child_splitter.split_text(parent_chunk.parent_text)
+        ):
+            logger.info("Processing child chunk №%s", child_id)
+            yield Document(
+                    page_content=child_chunk,
+                    metadata={
+                        "document_id": document_id,
+                        "parent_id": parent_id,
+                        "chunk_id": child_id,
+                        "document_idx": doc_idx,
+                    },
+                )
+
+    def _generate_parent_chunks(
+            self,
+            document_id: int,
+            document_chunks: list[str],
+    ):
+        for parent_id, parent_chunk in enumerate(document_chunks):
+            logger.info("Processing parent chunk №%s", parent_id)
+
+            yield ParentChunk(
+                    document_id=document_id,
+                    parent_id=parent_id,
+                    parent_text=parent_chunk
+            )
+
     def add_documents(
         self, texts: list[str], document_ids: Optional[list[str]] = None
     ) -> None:
@@ -177,31 +213,12 @@ class Embedder:
                 zip(document_ids, [parent_splitter.split_text(text) for text in texts])
             )
         ):
-            for parent_id, parent_chunk in enumerate(document_chunks):
-                logger.info("Processing parent chunk №%s", parent_id)
-                chunk_storage.append(
-                    ParentChunk(
-                        document_id=document_id,
-                        parent_id=parent_id,
-                        parent_text=parent_chunk,
-                    )
-                )
-
-                for child_id, child_chunk in enumerate(
-                    child_splitter.split_text(parent_chunk)
-                ):
-                    logger.info("Processing child chunk №%s", child_id)
-                    docs.append(
-                        Document(
-                            page_content=child_chunk,
-                            metadata={
-                                "document_id": document_id,
-                                "parent_id": parent_id,
-                                "chunk_id": child_id,
-                                "document_idx": doc_idx,
-                            },
-                        )
-                    )
+            for parent_id, parent_chunk in enumerate(self._generate_parent_chunks(
+                    document_id, document_chunks)):
+                chunk_storage.append(parent_chunk)
+                for child_chunk in self._generate_child_chunks(
+                        child_splitter, document_id, doc_idx, parent_id, parent_chunk):
+                    docs.append(child_chunk)
 
         self._vector_db.add_documents(docs)
 
