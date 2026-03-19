@@ -51,9 +51,11 @@ class VectorDatabase:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}({self._dense_embeddings=!r}, " \
-               f"{self._sparse_embeddings=!r}, " \
-               f"self._client={self._client.__class__.__name__!r},{self._recreate_collection=!r})"
+        return (
+            f"{self.__class__.__name__!r}({self._dense_embeddings=!r}, "
+            f"{self._sparse_embeddings=!r}, "
+            f"self._client={self._client.__class__.__name__!r},{self._recreate_collection=!r})"
+        )
 
     def close(self) -> None:
         """
