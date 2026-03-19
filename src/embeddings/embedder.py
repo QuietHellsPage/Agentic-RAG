@@ -151,8 +151,8 @@ class Embedder:
         Returns:
             str: String representation
         """
-        return f"{self.__class__.__name__!r}({self._config=!r}, {self.
-        _device=!r}, {self._recreate_collection=!r})"
+        return f"{self.__class__.__name__!r}({self._config=!r}, " \
+               f"{self._device=!r}, {self._recreate_collection=!r})"
 
     def add_documents(
         self, texts: list[str], document_ids: Optional[list[str]] = None
