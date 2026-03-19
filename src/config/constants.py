@@ -144,3 +144,6 @@ class GraphInitializerStorage(Enum):
 ENUM_VALUES = [item.value for item in GraphLabelsStorage]
 
 EMBEDDINGS_SIZE = 1024
+
+K = 4
+THRESHOLD = 0.3

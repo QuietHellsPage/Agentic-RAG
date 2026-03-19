@@ -1,5 +1,5 @@
 [tool.mypy]
-python_version = "3.14"
+python_version = "3.13"
 exclude = ["venv*", ".venv*"]
 
 [[tool.mypy.overrides]]

@@ -9,9 +9,9 @@ from langchain_qdrant.fastembed_sparse import FastEmbedSparse
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, SparseVectorParams, VectorParams
 
-from src.config.constants import EMBEDDINGS_SIZE
+from src.config.constants import EMBEDDINGS_SIZE, K
 from src.config.constants import LOGGER as logger
-from src.config.constants import PathsStorage
+from src.config.constants import PathsStorage, THRESHOLD
 
 
 class VectorDatabase:
@@ -75,7 +75,7 @@ class VectorDatabase:
         return self._vector_store.add_documents(documents)
 
     def similarity_search_with_score(
-        self, query: str, k: int = 5
+        self, query: str, k: int = K
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores.
@@ -90,7 +90,7 @@ class VectorDatabase:
         return self._vector_store.similarity_search_with_score(query, k=k)
 
     def similarity_search_with_score_and_threshold(
-        self, query: str, k: int = 4, threshold: float = 0.3
+        self, query: str, k: int = K, threshold: float = THRESHOLD
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores and threshold.
