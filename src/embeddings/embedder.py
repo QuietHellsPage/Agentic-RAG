@@ -16,12 +16,14 @@ from qdrant_client.models import SparseVector
 from tqdm import tqdm
 
 from src.config.constants import (
+    K,
     LLMsAndVectorizersStorage,
 )
 from src.config.constants import LOGGER as logger
 from src.config.constants import (
     PathsStorage,
     TEXT_SPLITTER_SEPARATORS,
+    THRESHOLD,
 )
 from src.config.models import EmbedderConfig, ParentChunk
 from src.helpers.utils import _choose_device
@@ -209,7 +211,7 @@ class Embedder:
         self._save_parent_chunks(chunk_storage)
 
     def similarity_search_with_score(  # For future maybe
-        self, query: str, k: int = 5
+        self, query: str, k: int = K
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores.
@@ -224,7 +226,7 @@ class Embedder:
         return self._vector_db.similarity_search_with_score(query, k)
 
     def similarity_search_with_score_and_threshold(
-        self, query: str, k: int = 4, threshold: float = 0.3
+        self, query: str, k: int = K, threshold: float = THRESHOLD
     ) -> list[tuple[Document, float]]:
         """
         Performs hybrid similarity search with scores and threshold.
