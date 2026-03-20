@@ -12,10 +12,10 @@ class EmbedderConfig(BaseModel):
     Storage for embeddings processing
     """
 
-    parent_chunk_size: Annotated[int, Field(default=4096, gt=0)]
-    parent_chunk_overlap: Annotated[int, Field(default=400, gt=0)]
-    child_chunk_size: Annotated[int, Field(default=1024, gt=0)]
-    child_chunk_overlap: Annotated[int, Field(default=200, gt=0)]
+    parent_chunk_size: Annotated[int, Field(default=4096, gt=0)] = 4096
+    parent_chunk_overlap: Annotated[int, Field(default=400, gt=0)] = 400
+    child_chunk_size: Annotated[int, Field(default=1024, gt=0)] = 1024
+    child_chunk_overlap: Annotated[int, Field(default=200, gt=0)] = 200
 
     @model_validator(mode="after")
     def validate_fields(self) -> "EmbedderConfig":
@@ -64,7 +64,7 @@ class SearchResult(BaseModel):
     Result of child chunk search
     """
 
-    chunks: Annotated[list[ChildChunkItem], Field(default_factory=list)]
+    chunks: Annotated[list[ChildChunkItem], Field(default_factory=list)] = []
 
     @property
     def found(self) -> bool:

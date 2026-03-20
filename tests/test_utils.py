@@ -8,31 +8,29 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
+from src.helpers.utils import (  # pylint: disable=import-error
+    _choose_device,
+    _collection_is_ready,
+    _load_md_files,
+)
+
 
 class TestChooseDevice:
     """
     Class for testing device choice
     """
 
-    def test_returns_passed_device(self) -> bool:
+    def test_returns_passed_device(self) -> None:
         """
         Test defined device
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _choose_device
 
         assert _choose_device("mps") == "mps"
 
-    def test_env_variable_used_when_no_arg(self) -> bool:
+    def test_env_variable_used_when_no_arg(self) -> None:
         """
         Test env device is chosen
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _choose_device
 
         with patch.dict(os.environ, {"EMBEDDINGS_DEVICE": "cpu"}):
             with patch(
@@ -41,28 +39,20 @@ class TestChooseDevice:
                 device = _choose_device()
                 assert device == "cpu"
 
-    def test_cuda_selected_when_available_and_no_env(self) -> bool:
+    def test_cuda_selected_when_available_and_no_env(self) -> None:
         """
         Test cuda selected if available
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _choose_device
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("src.config.constants.EMBEDDINGS_DEVICE_ENV", "NO_SUCH_ENV_VAR"):
                 with patch("torch.cuda.is_available", return_value=True):
                     assert _choose_device() == "cuda"
 
-    def test_cpu_selected_when_cuda_unavailable(self) -> bool:
+    def test_cpu_selected_when_cuda_unavailable(self) -> None:
         """
         Test cpu selected if no other option
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _choose_device
 
         with patch.dict(os.environ, {}, clear=True):
             with patch("src.config.constants.EMBEDDINGS_DEVICE_ENV", "NO_SUCH_ENV_VAR"):
@@ -75,14 +65,10 @@ class TestCollectionIsReady:
     Tests for _collection_is_ready util
     """
 
-    def test_returns_false_when_parent_collection_missing(self, tmp_path: Any) -> bool:
+    def test_returns_false_when_parent_collection_missing(self, tmp_path: Any) -> None:
         """
         Test returns false when no parent collection
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _collection_is_ready
 
         with patch("src.helpers.utils.PathsStorage") as mock_paths:
             mock_paths.PARENT_COLLECTION.value = tmp_path / "missing.json"
@@ -90,14 +76,10 @@ class TestCollectionIsReady:
             mock_paths.CHILD_COLLECTION.value = "child_col"
             assert _collection_is_ready() is False
 
-    def test_returns_false_when_qdrant_path_missing(self, tmp_path: Any) -> bool:
+    def test_returns_false_when_qdrant_path_missing(self, tmp_path: Any) -> None:
         """
         Test returns false when no qdrant path
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _collection_is_ready
 
         parent_file = tmp_path / "parent.json"
         parent_file.write_text("[]")
@@ -108,14 +90,10 @@ class TestCollectionIsReady:
             mock_paths.CHILD_COLLECTION.value = "child_col"
             assert _collection_is_ready() is False
 
-    def test_returns_false_when_collection_not_in_qdrant(self, tmp_path: Any) -> bool:
+    def test_returns_false_when_collection_not_in_qdrant(self, tmp_path: Any) -> None:
         """
         Test returns false when no qdrant storage
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _collection_is_ready
 
         parent_file = tmp_path / "parent.json"
         parent_file.write_text("[]")
@@ -136,14 +114,10 @@ class TestCollectionIsReady:
         assert result is False
         mock_client.close.assert_called_once()
 
-    def test_returns_true_when_everything_exists(self, tmp_path: Any) -> bool:
+    def test_returns_true_when_everything_exists(self, tmp_path: Any) -> None:
         """
         Test returns true when both collections are present
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _collection_is_ready
 
         parent_file = tmp_path / "parent.json"
         parent_file.write_text("[]")
@@ -170,28 +144,20 @@ class TestLoadMdFiles:
     Tests for .md files loader
     """
 
-    def test_raises_when_no_md_files(self, tmp_path: Any) -> bool:
+    def test_raises_when_no_md_files(self, tmp_path: Any) -> None:
         """
         Test raises error when no raw files present
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _load_md_files
 
         with patch("src.helpers.utils.PathsStorage") as mock_paths:
             mock_paths.RAW_MD_COLLECTION.value = tmp_path
             with pytest.raises(FileNotFoundError, match="No .md files found"):
                 _load_md_files()
 
-    def test_loads_md_files_correctly(self, tmp_path: Any) -> bool:
+    def test_loads_md_files_correctly(self, tmp_path: Any) -> None:
         """
         Test loads .md files correctly
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _load_md_files
 
         (tmp_path / "doc_a.md").write_text("content A", encoding="utf-8")
         (tmp_path / "doc_b.md").write_text("content B", encoding="utf-8")
@@ -206,14 +172,10 @@ class TestLoadMdFiles:
         assert "doc_b" in doc_ids
         assert "content A" in texts or "content B" in texts
 
-    def test_returns_sorted_files(self, tmp_path: Any) -> bool:
+    def test_returns_sorted_files(self, tmp_path: Any) -> None:
         """
         Test returns files correctly
-
-        Returns:
-            bool: Result of check
         """
-        from src.helpers.utils import _load_md_files
 
         (tmp_path / "z_file.md").write_text("Z")
         (tmp_path / "a_file.md").write_text("A")
