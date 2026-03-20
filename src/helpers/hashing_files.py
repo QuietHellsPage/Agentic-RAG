@@ -25,7 +25,7 @@ class FileHashChecker:
         self.storage_file = str(storage_file)
         self.hashes = self._load_hashes()
 
-    def _load_hashes(self) -> dict:
+    def _load_hashes(self) -> list:
         """
         Loads hashes from file.
 
@@ -35,7 +35,7 @@ class FileHashChecker:
         if os.path.exists(self.storage_file):
             with open(self.storage_file, 'r', encoding='utf-8') as hash_file:
                 return json.load(hash_file)
-        return {}
+        return []
 
     def _save_hashes(self) -> None:
         """Saves hashes to file."""
@@ -102,10 +102,9 @@ class FileHashChecker:
             if entry['file_path'] == normalized_path and entry['algorithm'] == algorithm:
                 if entry['hash'] == current_hash:
                     return True
-                else:
-                    entry['hash'] = current_hash
-                    self._save_hashes()
-                    return False
+                entry['hash'] = current_hash
+                self._save_hashes()
+                return False
 
         self._add_hash(file_path, algorithm)
         return False
@@ -114,7 +113,7 @@ class FileHashChecker:
         """
         Clears the hash history.
         """
-        self.hashes = {}
+        self.hashes = []
         self._save_hashes()
 
     def clear_all_chunks(self) -> None:
