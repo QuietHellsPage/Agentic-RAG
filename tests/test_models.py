@@ -229,7 +229,7 @@ class TestSearchResult:
         """
 
         result = SearchResult()
-        assert result.chunks == []
+        assert not result.chunks
 
 
 class TestParentChunkResult:
