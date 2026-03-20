@@ -123,5 +123,5 @@ jobs:
             ${{ runner.os }}-pip-
 
       - name: Unittests
-        run:
-          echo "Stub"
+        run: |
+          pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html
