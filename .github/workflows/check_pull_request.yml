@@ -130,3 +130,9 @@ jobs:
       - name: Unittests
         run: |
           pytest tests/ -v --cov=src --cov-report=term-missing --cov-report=html
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: htmlcov/
