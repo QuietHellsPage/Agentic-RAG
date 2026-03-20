@@ -69,12 +69,10 @@ class EmbedSparse(FastEmbedSparse):
             list[SparseVector]: Massive of sparse vectors
         """
         embeddings = super().embed_documents(texts)
-        result = []
-        for embedding in embeddings:
-            indices = embedding.indices
-            values = embedding.values
-            result.append(SparseVector(indices=indices, values=values))
-        return result
+        return [
+            SparseVector(indices=embedding.indices, values=embedding.values)
+            for embedding in embeddings
+        ]
 
     def embed_query(self, text: str) -> SparseVector:
         """
@@ -156,8 +154,8 @@ class Embedder:
             f"{self._device=!r}, {self._recreate_collection=!r})"
         )
 
+    @staticmethod
     def _generate_child_chunks(
-        self,
         child_splitter,
         document_id: str,
         doc_idx: int,
@@ -178,8 +176,8 @@ class Embedder:
                 },
             )
 
+    @staticmethod
     def _generate_parent_chunks(
-        self,
         document_id: str,
         document_chunks: list[str],
     ):
