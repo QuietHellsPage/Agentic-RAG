@@ -3,7 +3,7 @@ Module to operate processing of raw text and saving it to vector db
 """
 
 import json
-from typing import Optional
+from typing import Generator, Optional
 
 from dotenv import load_dotenv
 from langchain_core.documents import Document
@@ -154,40 +154,6 @@ class Embedder:
             f"{self._device=!r}, {self._recreate_collection=!r})"
         )
 
-    @staticmethod
-    def _generate_child_chunks(
-        child_splitter,
-        document_id: str,
-        doc_idx: int,
-        parent_id: int,
-        parent_chunk: ParentChunk,
-    ):
-        for child_id, child_chunk in enumerate(
-            child_splitter.split_text(parent_chunk.parent_text)
-        ):
-            logger.info("Processing child chunk №%s", child_id)
-            yield Document(
-                page_content=child_chunk,
-                metadata={
-                    "document_id": document_id,
-                    "parent_id": parent_id,
-                    "chunk_id": child_id,
-                    "document_idx": doc_idx,
-                },
-            )
-
-    @staticmethod
-    def _generate_parent_chunks(
-        document_id: str,
-        document_chunks: list[str],
-    ):
-        for parent_id, parent_chunk in enumerate(document_chunks):
-            logger.info("Processing parent chunk №%s", parent_id)
-
-            yield ParentChunk(
-                document_id=document_id, parent_id=parent_id, parent_text=parent_chunk
-            )
-
     def add_documents(
         self, texts: list[str], document_ids: Optional[list[str]] = None
     ) -> None:
@@ -273,6 +239,64 @@ class Embedder:
         Method to close client
         """
         self._vector_db.close()
+
+    @staticmethod
+    def _generate_child_chunks(
+        child_splitter: RecursiveCharacterTextSplitter,
+        document_id: str,
+        doc_idx: int,
+        parent_id: int,
+        parent_chunk: ParentChunk,
+    ) -> Generator[Document]:
+        """
+        A generator for splitting parent chunks into Document instances of child chunks.
+
+        Args:
+            child_splitter (RecursiveCharacterTextSplitter):
+                An instance of RecursiveCharacterTextSplitter class.
+            document_id (str): ID of a document the chunk originates from.
+            doc_idx (int): Index of a document.
+            parent_id (int): ID of a parent chunk.
+            parent_chunk (ParentChunk): An instance of ParentChunk class to be split into children.
+
+        Returns:
+            Document: A Document instance of a child chunk.
+        """
+        for child_id, child_chunk in enumerate(
+            child_splitter.split_text(parent_chunk.parent_text)
+        ):
+            logger.info("Processing child chunk №%s", child_id)
+            yield Document(
+                page_content=child_chunk,
+                metadata={
+                    "document_id": document_id,
+                    "parent_id": parent_id,
+                    "chunk_id": child_id,
+                    "document_idx": doc_idx,
+                },
+            )
+
+    @staticmethod
+    def _generate_parent_chunks(
+        document_id: str,
+        document_chunks: list[str],
+    ) -> Generator[ParentChunk]:
+        """
+        A generator for getting ParentChunk instances from text chunks.
+
+        Args:
+            document_id (str): ID of a document the chunk originates from.
+            document_chunks (list[str]): A list of text chunks from a document.
+
+        Returns:
+            Document: A ParentChunk instance of a child chunk.
+        """
+        for parent_id, parent_chunk in enumerate(document_chunks):
+            logger.info("Processing parent chunk №%s", parent_id)
+
+            yield ParentChunk(
+                document_id=document_id, parent_id=parent_id, parent_text=parent_chunk
+            )
 
     def _init_text_splitters(self) -> tuple[RecursiveCharacterTextSplitter, ...]:
         """
