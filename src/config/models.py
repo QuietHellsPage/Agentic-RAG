@@ -64,7 +64,7 @@ class SearchResult(BaseModel):
     Result of child chunk search
     """
 
-    chunks: Annotated[list[ChildChunkItem], Field(default_factory=list)] = []
+    chunks: list[ChildChunkItem] = []
 
     @property
     def found(self) -> bool:
