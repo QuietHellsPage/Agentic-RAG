@@ -6,6 +6,6 @@ dist/
 .DS_Store
 data/
 .env
-.coverage*
+.coverage
 htmlcov/
 .vscode
