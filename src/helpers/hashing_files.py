@@ -34,7 +34,7 @@ class FileHashChecker:
         """
         return f"{self.__class__.__name__}(hashes={self._hashes})"
 
-    def check_file(self, file_path: str, algorithm: str = 'sha256') -> bool:
+    def check_file(self, file_path: str, algorithm: str = "sha256") -> bool:
         """
         Method that checks if a file has changed since last check.
 
@@ -48,10 +48,13 @@ class FileHashChecker:
         """
         normalized_path = str(Path(file_path).resolve())
         for entry in self._hashes:
-            if not entry['file_path'] == normalized_path and not entry['algorithm'] == algorithm:
-                if entry['hash'] == (self._calculate_hash(file_path, algorithm)):
+            if (
+                not entry["file_path"] == normalized_path
+                and not entry["algorithm"] == algorithm
+            ):
+                if entry["hash"] == (self._calculate_hash(file_path, algorithm)):
                     return True
-                entry['hash'] = self._calculate_hash(file_path, algorithm)
+                entry["hash"] = self._calculate_hash(file_path, algorithm)
                 self._save_hashes()
                 return False
         self._add_hash(file_path, algorithm)
@@ -66,17 +69,17 @@ class FileHashChecker:
         """
         if not Path(self._storage_file).exists():
             return []
-        with open(self._storage_file, 'r', encoding='utf-8') as hash_file:
+        with open(self._storage_file, "r", encoding="utf-8") as hash_file:
             return json.load(hash_file)
 
     def _save_hashes(self) -> None:
         """
         Method that saves hashes to file.
         """
-        with open(self._storage_file, 'w', encoding='utf-8') as f:
+        with open(self._storage_file, "w", encoding="utf-8") as f:
             json.dump(self._hashes, f, indent=2, ensure_ascii=False)
 
-    def _add_hash(self, file_path: str, algorithm: str = 'sha256') -> None:
+    def _add_hash(self, file_path: str, algorithm: str = "sha256") -> None:
         """
         Method that adds hash of the file to storage.
         """
@@ -86,13 +89,14 @@ class FileHashChecker:
             hash_entry = {
                 "file_path": normalized_path,
                 "algorithm": algorithm,
-                "hash": current_hash
+                "hash": current_hash,
             }
             self._hashes.append(hash_entry)
             self._save_hashes()
 
-    def _calculate_hash(self, file_path: str, algorithm: str = 'sha256', chunk_size: int = 4096) ->\
-            Optional[str]:
+    def _calculate_hash(
+        self, file_path: str, algorithm: str = "sha256", chunk_size: int = 4096
+    ) -> Optional[str]:
         """
         Method that calculates the hash of the file.
 
@@ -108,7 +112,7 @@ class FileHashChecker:
             logger.info(f"File %s not found: {file_path}")
             return None
         hash_obj = hashlib.new(algorithm)
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             while chunk := f.read(chunk_size):
                 hash_obj.update(chunk)
         return hash_obj.hexdigest()
@@ -128,8 +132,8 @@ class FileHashChecker:
         parent_chunks_dir = str(PathsStorage.PARENT_CHUNKS_PATH.value)
         if not Path(child_chunks_dir).exists() or not Path(parent_chunks_dir).exists():
             logger.info("Directories with chunks not found")
-        shutil.rmtree(str(PathsStorage.QDRANT_PATH.value), ignore_errors=True )
-        shutil.rmtree(parent_chunks_dir, ignore_errors=True )
+        shutil.rmtree(str(PathsStorage.QDRANT_PATH.value), ignore_errors=True)
+        shutil.rmtree(parent_chunks_dir, ignore_errors=True)
         logger.info("Directories with chunks deleted")
 
     def full_cleanup(self):
