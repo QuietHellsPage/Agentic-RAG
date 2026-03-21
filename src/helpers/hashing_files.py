@@ -4,10 +4,11 @@ Module for hashing files
 
 import hashlib
 import json
-import os
 import shutil
+from pathlib import Path
 from typing import Optional
 
+from src.config.constants import LOGGER as logger
 from src.config.constants import PathsStorage
 
 
@@ -16,75 +17,26 @@ class FileHashChecker:
     Hashing files and comparing them with previous results.
     """
 
-    def __init__(self):
+    def __init__(self) -> None:
         """
         Initialize an instance of FileHashChecker.
-
         """
         storage_file = PathsStorage.HASH_FILE.value
-        self.storage_file = str(storage_file)
-        self.hashes = self._load_hashes()
+        self._storage_file = str(storage_file)
+        self._hashes = self._load_hashes()
 
-    def _load_hashes(self) -> list:
+    def __repr__(self) -> str:
         """
-        Loads hashes from file.
+        Method that returns string representation of the class
 
         Returns:
-            list: Hashes from file
+            str: String representation
         """
-        if os.path.exists(self.storage_file):
-            with open(self.storage_file, 'r', encoding='utf-8') as hash_file:
-                return json.load(hash_file)
-        return []
-
-    def _save_hashes(self) -> None:
-        """Saves hashes to file."""
-        with open(self.storage_file, 'w', encoding='utf-8') as f:
-            json.dump(self.hashes, f, indent=2, ensure_ascii=False)
-
-    def _add_hash(self, file_path: str, algorithm: str = 'sha256') -> None:
-        """Adds hash of the file to storage."""
-        current_hash = self.calculate_hash(file_path, algorithm)
-        if current_hash:
-            normalized_path = os.path.abspath(file_path)
-
-            # Добавляем хэш в список
-            hash_entry = {
-                "file_path": normalized_path,
-                "algorithm": algorithm,
-                "hash": current_hash
-            }
-
-            self.hashes.append(hash_entry)
-            self._save_hashes()
-
-    def calculate_hash(self, file_path: str, algorithm: str = 'sha256', chunk_size: int = 4096) -> \
-    Optional[str]:
-        """
-        Calculates the hash of the file.
-
-        Args:
-            file_path: path to user's file
-            algorithm: hashing algorithm
-            chunk_size: chunk size for reading file
-
-        Returns:
-            String representation of the hash, or None if an error occurs.
-        """
-        if not os.path.exists(file_path):
-            print(f"File not found: {file_path}")
-            return None
-
-        hash_obj = hashlib.new(algorithm)
-
-        with open(file_path, 'rb') as f:
-            while chunk := f.read(chunk_size):
-                hash_obj.update(chunk)
-        return hash_obj.hexdigest()
+        return f"{self.__class__.__name__}(hashes={self._hashes})"
 
     def check_file(self, file_path: str, algorithm: str = 'sha256') -> bool:
         """
-        Check if a file has changed since last check.
+        Method that checks if a file has changed since last check.
 
         Args:
             file_path: Path to the file to check
@@ -94,42 +46,95 @@ class FileHashChecker:
             True if the file hasn't changed (hash matches previous),
             False if it's a new file or has been modified.
         """
-        current_hash = self.calculate_hash(file_path, algorithm)
-
-        normalized_path = os.path.abspath(file_path)
-
-        for entry in self.hashes:
-            if entry['file_path'] == normalized_path and entry['algorithm'] == algorithm:
-                if entry['hash'] == current_hash:
+        normalized_path = str(Path(file_path).resolve())
+        for entry in self._hashes:
+            if not entry['file_path'] == normalized_path and not entry['algorithm'] == algorithm:
+                if entry['hash'] == (self._calculate_hash(file_path, algorithm)):
                     return True
-                entry['hash'] = current_hash
+                entry['hash'] = self._calculate_hash(file_path, algorithm)
                 self._save_hashes()
                 return False
-
         self._add_hash(file_path, algorithm)
         return False
 
-    def clear_history(self) -> None:
+    def _load_hashes(self) -> list:
         """
-        Clears the hash history.
+        Method that loads hashes from file.
+
+        Returns:
+            list: Hashes from file
         """
-        self.hashes = []
+        if not Path(self._storage_file).exists():
+            return []
+        with open(self._storage_file, 'r', encoding='utf-8') as hash_file:
+            return json.load(hash_file)
+
+    def _save_hashes(self) -> None:
+        """
+        Method that saves hashes to file.
+        """
+        with open(self._storage_file, 'w', encoding='utf-8') as f:
+            json.dump(self._hashes, f, indent=2, ensure_ascii=False)
+
+    def _add_hash(self, file_path: str, algorithm: str = 'sha256') -> None:
+        """
+        Method that adds hash of the file to storage.
+        """
+        current_hash = self._calculate_hash(file_path, algorithm)
+        if current_hash:
+            normalized_path = str(Path(file_path).resolve())
+            hash_entry = {
+                "file_path": normalized_path,
+                "algorithm": algorithm,
+                "hash": current_hash
+            }
+            self._hashes.append(hash_entry)
+            self._save_hashes()
+
+    def _calculate_hash(self, file_path: str, algorithm: str = 'sha256', chunk_size: int = 4096) ->\
+            Optional[str]:
+        """
+        Method that calculates the hash of the file.
+
+        Args:
+            file_path: path to user's file
+            algorithm: hashing algorithm
+            chunk_size: chunk size for reading file
+
+        Returns:
+            String representation of the hash, or None if an error occurs.
+        """
+        if not Path(file_path).exists():
+            logger.info(f"File %s not found: {file_path}")
+            return None
+        hash_obj = hashlib.new(algorithm)
+        with open(file_path, 'rb') as f:
+            while chunk := f.read(chunk_size):
+                hash_obj.update(chunk)
+        return hash_obj.hexdigest()
+
+    def _clear_history(self) -> None:
+        """
+        Method that clears the hash history.
+        """
+        self._hashes = []
         self._save_hashes()
 
-    def clear_all_chunks(self) -> None:
+    def _clear_all_chunks(self) -> None:
         """
-        Deletes all chunks and temporary files.
+        Method that deletes all chunks and temporary files.
         """
         child_chunks_dir = str(PathsStorage.CHILD_COLLECTION.value)
         parent_chunks_dir = str(PathsStorage.PARENT_CHUNKS_PATH.value)
-        if os.path.exists(child_chunks_dir) or os.path.exists(parent_chunks_dir):
-            shutil.rmtree(str(PathsStorage.QDRANT_PATH.value))
-            shutil.rmtree(parent_chunks_dir)
-            print("Directories with chunks deleted")
+        if not Path(child_chunks_dir).exists() or not Path(parent_chunks_dir).exists():
+            logger.info("Directories with chunks not found")
+        shutil.rmtree(str(PathsStorage.QDRANT_PATH.value), ignore_errors=True )
+        shutil.rmtree(parent_chunks_dir, ignore_errors=True )
+        logger.info("Directories with chunks deleted")
 
     def full_cleanup(self):
         """
-        Performs complete cleanup: hash history + all chunks.
+        Method that performs complete cleanup: hash history + all chunks.
         """
-        self.clear_history()
-        self.clear_all_chunks()
+        self._clear_history()
+        self._clear_all_chunks()
