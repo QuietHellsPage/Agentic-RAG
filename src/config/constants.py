@@ -45,6 +45,7 @@ class PathsStorage(Enum):
     PARENT_COLLECTION = PARENT_CHUNKS_PATH / "parent_chunks_storage.json"
     RAW_PDF_COLLECTION = DATA_PATH / "raw_texts" / "pdf_storage"
     RAW_MD_COLLECTION = DATA_PATH / "raw_texts" / "md_storage"
+    HASH_FILE = DATA_PATH / "file_hashes.json"
 
 
 class PromptsStorage(StrEnum):

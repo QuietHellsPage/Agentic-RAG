@@ -109,3 +109,13 @@ class RAGState(TypedDict):
     parent_chunks: str
     answer: str
     reformulated: bool
+
+
+class HashEntry(BaseModel):
+    """
+    Single retrieved hash entry
+    """
+
+    file_path: str
+    algorithm: str
+    hash: str = Field(alias="hash")
