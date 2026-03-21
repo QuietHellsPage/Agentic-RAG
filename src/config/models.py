@@ -2,7 +2,8 @@
 Models for processing embeddings
 """
 
-from typing import Annotated, TypedDict
+import json
+from typing import Annotated, TypedDict, List
 
 from pydantic import BaseModel, Field, model_validator
 
@@ -109,3 +110,13 @@ class RAGState(TypedDict):
     parent_chunks: str
     answer: str
     reformulated: bool
+
+
+class HashEntry(BaseModel):
+    """
+    Single retrieved hash entry
+    """
+
+    file_path: str
+    algorithm: str
+    hash: str = Field(alias="hash")

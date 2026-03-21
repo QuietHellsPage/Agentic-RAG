@@ -6,10 +6,11 @@ import hashlib
 import json
 import shutil
 from pathlib import Path
-from typing import Optional
+from typing import List
 
 from src.config.constants import LOGGER as logger
 from src.config.constants import PathsStorage
+from src.config.models import HashEntry
 
 
 class FileHashChecker:
@@ -23,7 +24,7 @@ class FileHashChecker:
         """
         storage_file = PathsStorage.HASH_FILE.value
         self._storage_file = str(storage_file)
-        self._hashes = self._load_hashes()
+        self._hashes: List[HashEntry] = self._load_hashes()
 
     def __repr__(self) -> str:
         """
@@ -48,13 +49,10 @@ class FileHashChecker:
         """
         normalized_path = str(Path(file_path).resolve())
         for entry in self._hashes:
-            if (
-                not entry["file_path"] == normalized_path
-                and not entry["algorithm"] == algorithm
-            ):
-                if entry["hash"] == (self._calculate_hash(file_path, algorithm)):
+            if not entry.hash == normalized_path and not entry.algorithm == algorithm:
+                if entry.hash == (self._calculate_hash(file_path, algorithm)):
                     return True
-                entry["hash"] = self._calculate_hash(file_path, algorithm)
+                entry.hash = self._calculate_hash(file_path, algorithm)
                 self._save_hashes()
                 return False
         self._add_hash(file_path, algorithm)
@@ -86,17 +84,15 @@ class FileHashChecker:
         current_hash = self._calculate_hash(file_path, algorithm)
         if current_hash:
             normalized_path = str(Path(file_path).resolve())
-            hash_entry = {
-                "file_path": normalized_path,
-                "algorithm": algorithm,
-                "hash": current_hash,
-            }
+            hash_entry = HashEntry(
+                file_path=normalized_path, algorithm=algorithm, hash=current_hash
+            )
             self._hashes.append(hash_entry)
             self._save_hashes()
 
     def _calculate_hash(
         self, file_path: str, algorithm: str = "sha256", chunk_size: int = 4096
-    ) -> Optional[str]:
+    ) -> str:
         """
         Method that calculates the hash of the file.
 
@@ -110,7 +106,6 @@ class FileHashChecker:
         """
         if not Path(file_path).exists():
             logger.info(f"File %s not found: {file_path}")
-            return None
         hash_obj = hashlib.new(algorithm)
         with open(file_path, "rb") as f:
             while chunk := f.read(chunk_size):
