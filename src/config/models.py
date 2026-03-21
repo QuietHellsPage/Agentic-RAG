@@ -2,8 +2,7 @@
 Models for processing embeddings
 """
 
-import json
-from typing import Annotated, TypedDict, List
+from typing import Annotated, TypedDict
 
 from pydantic import BaseModel, Field, model_validator
 
