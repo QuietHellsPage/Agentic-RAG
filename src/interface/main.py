@@ -1,7 +1,7 @@
 """
 Main point of RAG
 """
-import os
+
 from pathlib import Path
 from typing import Iterable
 
@@ -14,8 +14,8 @@ from src.config.constants import LLMsAndVectorizersStorage
 from src.config.constants import LOGGER as logger
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
-from src.helpers.utils import _collection_is_ready, _load_md_files
 from src.helpers.hashing_files import FileHashChecker
+from src.helpers.utils import _load_md_files
 from src.vector_db.vector_db import VectorDatabase
 
 _EMBEDDER_CONFIG = EmbedderConfig(
@@ -34,7 +34,7 @@ def _build_agent() -> RAGAgent:
     Returns:
         RAGAgent: Instance of agent
     """
-    directory = Path('Agentic-RAG/data/raw_texts/md_storage')
+    directory = Path("Agentic-RAG/data/raw_texts/md_storage")
     checker = FileHashChecker()
     populate = False
     for file in directory.iterdir():

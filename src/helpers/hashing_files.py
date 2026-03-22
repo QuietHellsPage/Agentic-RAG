@@ -47,8 +47,6 @@ class FileHashChecker:
             True if the file hasn't changed (hash matches previous),
             False if it's a new file or has been modified.
         """
-        if not self._hashes:
-            return False
         normalized_path = str(Path(file_path).resolve())
         for entry in self._hashes:
             if not entry.hash == normalized_path and not entry.algorithm == algorithm:
