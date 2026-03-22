@@ -1,7 +1,8 @@
 """
 Main point of RAG
 """
-
+import os
+from pathlib import Path
 from typing import Iterable
 
 import gradio as gr
@@ -14,6 +15,7 @@ from src.config.constants import LOGGER as logger
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
 from src.helpers.utils import _collection_is_ready, _load_md_files
+from src.helpers.hashing_files import FileHashChecker
 from src.vector_db.vector_db import VectorDatabase
 
 _EMBEDDER_CONFIG = EmbedderConfig(
@@ -32,7 +34,13 @@ def _build_agent() -> RAGAgent:
     Returns:
         RAGAgent: Instance of agent
     """
-    populate = not _collection_is_ready()
+    directory = Path('Agentic-RAG/data/raw_texts/md_storage')
+    checker = FileHashChecker()
+    populate = False
+    for file in directory.iterdir():
+        populate = not checker.check_file(str(file))
+        if populate is True:
+            break
 
     embedder = Embedder(
         config=_EMBEDDER_CONFIG,
