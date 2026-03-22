@@ -249,7 +249,7 @@ class Embedder:
         doc_idx: int,
         parent_id: int,
         parent_chunk: ParentChunk,
-    ) -> Generator[Document]:
+    ) -> Generator[Document, None, None]:
         """
         A generator for splitting parent chunks into Document instances of child chunks.
 
@@ -282,7 +282,7 @@ class Embedder:
     def _generate_parent_chunks(
         document_id: str,
         document_chunks: list[str],
-    ) -> Generator[ParentChunk]:
+    ) -> Generator[ParentChunk, None, None]:
         """
         A generator for getting ParentChunk instances from text chunks.
 
