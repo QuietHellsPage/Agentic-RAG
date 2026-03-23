@@ -122,7 +122,6 @@ class TestHashingFiles:
         assert entry.algorithm == "sha256"
         assert entry.hash == hashlib.sha256(b"Hello, World!").hexdigest()
 
-
     def test_load_hashes_no_file(self, file_hash_checker, mock_paths_storage):
         """
         Test loading hashes when file doesn't exist.
