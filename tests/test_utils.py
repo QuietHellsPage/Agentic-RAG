@@ -4,13 +4,12 @@ Tests for utils
 
 import os
 from typing import Any
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 import pytest
 
 from src.helpers.utils import (  # pylint: disable=import-error
     _choose_device,
-    _collection_is_ready,
     _load_md_files,
 )
 
@@ -58,85 +57,6 @@ class TestChooseDevice:
             with patch("src.config.constants.EMBEDDINGS_DEVICE_ENV", "NO_SUCH_ENV_VAR"):
                 with patch("torch.cuda.is_available", return_value=False):
                     assert _choose_device() == "cpu"
-
-
-class TestCollectionIsReady:
-    """
-    Tests for _collection_is_ready util
-    """
-
-    def test_returns_false_when_parent_collection_missing(self, tmp_path: Any) -> None:
-        """
-        Test returns false when no parent collection
-        """
-
-        with patch("src.helpers.utils.PathsStorage") as mock_paths:
-            mock_paths.PARENT_COLLECTION.value = tmp_path / "missing.json"
-            mock_paths.QDRANT_PATH.value = tmp_path / "qdrant"
-            mock_paths.CHILD_COLLECTION.value = "child_col"
-            assert _collection_is_ready() is False
-
-    def test_returns_false_when_qdrant_path_missing(self, tmp_path: Any) -> None:
-        """
-        Test returns false when no qdrant path
-        """
-
-        parent_file = tmp_path / "parent.json"
-        parent_file.write_text("[]")
-
-        with patch("src.helpers.utils.PathsStorage") as mock_paths:
-            mock_paths.PARENT_COLLECTION.value = parent_file
-            mock_paths.QDRANT_PATH.value = tmp_path / "nonexistent_qdrant"
-            mock_paths.CHILD_COLLECTION.value = "child_col"
-            assert _collection_is_ready() is False
-
-    def test_returns_false_when_collection_not_in_qdrant(self, tmp_path: Any) -> None:
-        """
-        Test returns false when no qdrant storage
-        """
-
-        parent_file = tmp_path / "parent.json"
-        parent_file.write_text("[]")
-        qdrant_dir = tmp_path / "qdrant"
-        qdrant_dir.mkdir()
-
-        mock_client = MagicMock()
-        mock_client.collection_exists.return_value = False
-
-        with patch("src.helpers.utils.PathsStorage") as mock_paths, patch(
-            "src.helpers.utils.QdrantClient", return_value=mock_client
-        ):
-            mock_paths.PARENT_COLLECTION.value = parent_file
-            mock_paths.QDRANT_PATH.value = qdrant_dir
-            mock_paths.CHILD_COLLECTION.value = "child_col"
-            result = _collection_is_ready()
-
-        assert result is False
-        mock_client.close.assert_called_once()
-
-    def test_returns_true_when_everything_exists(self, tmp_path: Any) -> None:
-        """
-        Test returns true when both collections are present
-        """
-
-        parent_file = tmp_path / "parent.json"
-        parent_file.write_text("[]")
-        qdrant_dir = tmp_path / "qdrant"
-        qdrant_dir.mkdir()
-
-        mock_client = MagicMock()
-        mock_client.collection_exists.return_value = True
-
-        with patch("src.helpers.utils.PathsStorage") as mock_paths, patch(
-            "src.helpers.utils.QdrantClient", return_value=mock_client
-        ):
-            mock_paths.PARENT_COLLECTION.value = parent_file
-            mock_paths.QDRANT_PATH.value = qdrant_dir
-            mock_paths.CHILD_COLLECTION.value = "child_col"
-            result = _collection_is_ready()
-
-        assert result is True
-        mock_client.close.assert_called_once()
 
 
 class TestLoadMdFiles:

@@ -199,29 +199,6 @@ class TestHashingFiles:
         assert result is False
         assert len(file_hash_checker._hashes) == 1
 
-    # def test_check_file_unchanged(self, file_hash_checker, sample_file):
-    #     """
-    #     Test check_file with unchanged file.
-    #     """
-    #     file_hash_checker.check_file(sample_file, "sha256")
-    #     result = file_hash_checker.check_file(sample_file, "sha256")
-    #     assert result is True
-    #
-    # def test_check_file_modified(self, file_hash_checker, sample_file, tmp_path):
-    #     """
-    #     Test check_file with modified file.
-    #     """
-    #     file_hash_checker.check_file(sample_file, "sha256")
-    #
-    #     file_path = Path(sample_file)
-    #     file_path.write_text("Modified content!")
-    #
-    #     result = file_hash_checker.check_file(sample_file, "sha256")
-    #
-    #     assert result is False
-    #     modified_hash = hashlib.sha256(b"Modified content!").hexdigest()
-    #     assert file_hash_checker._hashes[0].hash == modified_hash
-
     def test_clear_history(self, file_hash_checker, sample_file):
         """
         Test clearing hash history

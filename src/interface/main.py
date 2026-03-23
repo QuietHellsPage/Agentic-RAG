@@ -2,7 +2,6 @@
 Main point of RAG
 """
 
-from pathlib import Path
 from typing import Iterable
 
 import gradio as gr
@@ -12,6 +11,7 @@ from langchain_ollama import ChatOllama
 from src.agent.agent import RAGAgent
 from src.config.constants import LLMsAndVectorizersStorage
 from src.config.constants import LOGGER as logger
+from src.config.constants import PathsStorage
 from src.config.models import EmbedderConfig
 from src.embeddings.embedder import Embedder, EmbedSparse
 from src.helpers.hashing_files import FileHashChecker
@@ -34,12 +34,12 @@ def _build_agent() -> RAGAgent:
     Returns:
         RAGAgent: Instance of agent
     """
-    directory = Path("Agentic-RAG/data/raw_texts/md_storage")
+    directory = PathsStorage.RAW_MD_COLLECTION.value
     checker = FileHashChecker()
     populate = False
     for file in directory.iterdir():
         populate = not checker.check_file(str(file))
-        if populate is True:
+        if populate:
             break
 
     embedder = Embedder(
@@ -83,4 +83,7 @@ def chat(message: str, _) -> Iterable:
 
 
 if __name__ == "__main__":
-    gr.ChatInterface(chat).launch()
+    try:
+        gr.ChatInterface(chat).launch()
+    finally:
+        _agent.embedder.close()
