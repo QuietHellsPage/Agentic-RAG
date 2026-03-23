@@ -23,22 +23,7 @@ Sometimes prompts can be vague or imprecise. If no relevant information is found
 
 ## Quick Start Guide
 
-### Step 1 — Convert PDF Files to Markdown
-
-The RAG system works with **Markdown (`.md`)** files. If you only have PDFs, convert them first.
-
-1. Place your `.pdf` files into `data/raw_texts/pdf_storage`
-
-2. Run the conversion script:
-   ```bash
-   python src/helpers/process_raw_texts.py
-   ```
-
-3. The resulting `.md` files will appear in `data/raw_texts/md_storage`
-
----
-
-### Step 2 — Install Ollama and Required Models
+### Step 1 — Install Ollama and Required Models
 
 The RAG uses locally running LLMs via **Ollama**. Download and install it from the official site:
 👉 [https://ollama.com/](https://ollama.com/)
@@ -53,7 +38,7 @@ ollama pull mistral
 
 ---
 
-### Step 3 — Start the Ollama Server
+### Step 2 — Start the Ollama Server
 
 Before running the RAG, you need to start the Ollama server. Open a **separate terminal window** and run:
 
@@ -65,7 +50,7 @@ Keep this terminal open while working with the RAG. When you're done, you can st
 
 ---
 
-### Step 4 — Set Up the Project and Install Dependencies
+### Step 3 — Set Up the Project and Install Dependencies
 
 Open a new terminal in the **root directory of the project** and set the Python path:
 
@@ -92,6 +77,19 @@ pip install -r requirements.txt
 
 > This may take a few minutes depending on your internet connection.
 
+---
+### Step 4 — Convert PDF Files to Markdown
+
+The RAG system works with **Markdown (`.md`)** files. If you only have PDFs, convert them first.
+
+1. Place your `.pdf` files into `data/raw_texts/pdf_storage`
+
+2. Run the conversion script:
+   ```bash
+   python src/helpers/process_raw_texts.py
+   ```
+
+3. The resulting `.md` files will appear in `data/raw_texts/md_storage`
 ---
 
 ### Step 5 — Configure the Device (Optional)
