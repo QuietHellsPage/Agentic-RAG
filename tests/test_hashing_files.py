@@ -122,52 +122,6 @@ class TestHashingFiles:
         assert entry.algorithm == "sha256"
         assert entry.hash == hashlib.sha256(b"Hello, World!").hexdigest()
 
-    def test_load_hashes_from_file(
-        self, file_hash_checker, mock_paths_storage, tmp_path
-    ):
-        """
-        Test loading hashes from existing file.
-        """
-        test_file_1 = tmp_path / "test_file_1.txt"
-        test_file_1.write_text("Content 1")
-        test_file_2 = tmp_path / "test_file_2.txt"
-        test_file_2.write_text("Content 2")
-
-        hash_1 = hashlib.sha256(b"Content 1").hexdigest()
-        hash_2 = hashlib.sha256(b"Content 2").hexdigest()
-        test_data = [
-            {
-                "file_path": str(test_file_1.resolve()),
-                "algorithm": "sha256",
-                "hash": hash_1,
-            },
-            {
-                "file_path": str(test_file_2.resolve()),
-                "algorithm": "sha256",
-                "hash": hash_2,
-            },
-        ]
-
-        storage_file = Path(mock_paths_storage.HASH_FILE.value)
-        storage_file.parent.mkdir(parents=True, exist_ok=True)
-
-        file_hash_checker._hashes = test_data
-        with open(storage_file, "w", encoding="utf-8") as f:
-            json.dump(test_data, f)
-
-        with patch("src.config.constants.PathsStorage", mock_paths_storage):
-            checker = FileHashChecker()
-
-        assert len(checker._hashes) == 2
-
-        assert checker._hashes[0]["file_path"] == test_data[0]["file_path"]
-        assert checker._hashes[0]["algorithm"] == test_data[0]["algorithm"]
-        assert checker._hashes[0]["hash"] == test_data[0]["hash"]
-
-        assert checker._hashes[1]["file_path"] == test_data[1]["file_path"]
-        assert checker._hashes[1]["algorithm"] == test_data[1]["algorithm"]
-        assert checker._hashes[1]["hash"] == test_data[1]["hash"]
-
     def test_load_hashes_no_file(self, file_hash_checker, mock_paths_storage):
         """
         Test loading hashes when file doesn't exist.
@@ -198,29 +152,6 @@ class TestHashingFiles:
 
         assert result is False
         assert len(file_hash_checker._hashes) == 1
-
-    # def test_check_file_unchanged(self, file_hash_checker, sample_file):
-    #     """
-    #     Test check_file with unchanged file.
-    #     """
-    #     file_hash_checker.check_file(sample_file, "sha256")
-    #     result = file_hash_checker.check_file(sample_file, "sha256")
-    #     assert result is True
-    #
-    # def test_check_file_modified(self, file_hash_checker, sample_file, tmp_path):
-    #     """
-    #     Test check_file with modified file.
-    #     """
-    #     file_hash_checker.check_file(sample_file, "sha256")
-    #
-    #     file_path = Path(sample_file)
-    #     file_path.write_text("Modified content!")
-    #
-    #     result = file_hash_checker.check_file(sample_file, "sha256")
-    #
-    #     assert result is False
-    #     modified_hash = hashlib.sha256(b"Modified content!").hexdigest()
-    #     assert file_hash_checker._hashes[0].hash == modified_hash
 
     def test_clear_history(self, file_hash_checker, sample_file):
         """

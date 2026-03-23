@@ -49,8 +49,8 @@ class FileHashChecker:
         """
         normalized_path = str(Path(file_path).resolve())
         for entry in self._hashes:
-            if not entry.hash == normalized_path and not entry.algorithm == algorithm:
-                if entry.hash == (self._calculate_hash(file_path, algorithm)):
+            if entry.file_path == normalized_path and entry.algorithm == algorithm:
+                if entry.hash == self._calculate_hash(file_path, algorithm):
                     return True
                 entry.hash = self._calculate_hash(file_path, algorithm)
                 self._save_hashes()
@@ -67,15 +67,24 @@ class FileHashChecker:
         """
         if not Path(self._storage_file).exists():
             return []
-        with open(self._storage_file, "r", encoding="utf-8") as hash_file:
-            return json.load(hash_file)
+        try:
+            with open(self._storage_file, "r", encoding="utf-8") as hash_file:
+                data = json.load(hash_file)
+            return [HashEntry(**item) for item in data]
+        except (json.JSONDecodeError, FileNotFoundError):
+            return []
 
     def _save_hashes(self) -> None:
         """
         Method that saves hashes to file.
         """
         with open(self._storage_file, "w", encoding="utf-8") as f:
-            json.dump(self._hashes, f, indent=2, ensure_ascii=False)
+            json.dump(
+                [entry.model_dump() for entry in self._hashes],
+                f,
+                indent=2,
+                ensure_ascii=False,
+            )
 
     def _add_hash(self, file_path: str, algorithm: str = "sha256") -> None:
         """

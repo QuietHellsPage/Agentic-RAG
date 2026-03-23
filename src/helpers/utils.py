@@ -6,7 +6,6 @@ import os
 from typing import Optional
 
 import torch
-from qdrant_client import QdrantClient
 
 from src.config.constants import EMBEDDINGS_DEVICE_ENV
 from src.config.constants import LOGGER as logger
@@ -28,33 +27,6 @@ def _choose_device(device: Optional[str] = None) -> str:
             return "cuda" if torch.cuda.is_available() else "cpu"
         return env_device
     return device
-
-
-def _collection_is_ready() -> bool:
-    """
-    Method that checks whether qdrant collection and parent chunks file already exist.
-
-    Returns:
-        bool: True if collection is ready to use
-    """
-    parent_collection = PathsStorage.PARENT_COLLECTION.value
-    qdrant_path = PathsStorage.QDRANT_PATH.value
-
-    if not parent_collection.exists():
-        logger.info("Parent chunks file not found — will populate")
-        return False
-
-    if not qdrant_path.exists():
-        logger.info("Qdrant DB path not found — will populate")
-        return False
-
-    client = QdrantClient(path=str(qdrant_path))
-    exists = client.collection_exists(PathsStorage.CHILD_COLLECTION.value)
-    client.close()
-
-    if not exists:
-        logger.info("Qdrant collection not found — will populate")
-    return exists
 
 
 def _load_md_files() -> tuple[list[str], list[str]]:
